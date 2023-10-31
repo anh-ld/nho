@@ -13,6 +13,10 @@ and implementing a very simple DOM diffing algorithm in behind.
 - 1.1KB gzipped.
 - Simple API, inspired from `Vue`.
 
+
+### Example
+- [A todo list](https://nho-example.netlify.app/) - [Source](./playground)
+
 ### Limitations
 
 Nho skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `watch`, etc to stay small.
