@@ -18,21 +18,26 @@ function minifyEs() {
   };
 }
 
-export default defineConfig({
-  plugins: [minifyEs()],
-  root: resolve(__dirname, "./playground"),
-  resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
+export default defineConfig(({ command, mode }) => {
+  let config = {
+    plugins: [minifyEs()],
+    resolve: {
+      alias: { "@": resolve(__dirname, "./src") },
     },
-  },
-  build: {
-    lib: {
+    build: { emptyOutDir: true },
+  };
+
+  if (command === "serve" || (command === "build" && mode === "example")) {
+    config.root = resolve(__dirname, "./playground");
+  } else if (command === "build" && mode === "lib") {
+    config.root = resolve(__dirname, "./");
+    config.build.lib = {
       entry: resolve(__dirname, "./src/index.js"),
       formats: ["es", "umd"],
       name: packageContent.name,
       fileName: (format) => `index.${format}.js`,
-    },
-    emptyOutDir: true,
-  },
+    };
+  }
+
+  return config;
 });

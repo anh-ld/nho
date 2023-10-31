@@ -1,42 +1,11 @@
 import { Nho } from "@";
 
-class BigDaddy extends Nho {
-  setup() {
-    this.state = this.reactive({ count: 1 });
-  }
-
-  onMounted() {
-    console.log("Mounted");
-  }
-
-  increase(e) {
-    // this.state.count++;
-    console.log(1, e, ++this.state.count);
-  }
-
-  someNumber() {
-    return 30;
-  }
-
-  render(h) {
-    return h`
-      <div>
-        <p>Hello ${this.someNumber()}</p>
-        <span>Count: ${this.state.count}</span>
-        <button on:click="${this.increase}">Increase</button>
-      </div>
-    `;
-  }
-}
-
-customElements.define("big-daddy", BigDaddy);
-
 class TodoItem extends Nho {
   render(h) {
     return h`
-      <div style="margin-bottom:4px">
-        <button onclick=${() => this.props.remove(this.props.item)}>Remove</button>
-        <span class="item">${this.props.item}</span>
+      <div class="item">
+        <span class="item-text">${this.props.item}</span>
+        <button class="remove-button" onclick=${this.props.remove}>Remove</button>
       </div>
     `;
   }
@@ -48,25 +17,27 @@ class TodoItems extends Nho {
   }
 
   addItem() {
-    this.state.items = [...this.state.items, Math.random()];
+    const item = prompt("Please enter to do item");
+    if (!item) return;
+    this.state.items = [...this.state.items, item];
   }
 
-  removeItem(v) {
-    this.state.items = this.state.items.filter((item) => item !== v);
-    console.log(this.state.items.length);
+  removeItem(i) {
+    this.state.items = this.state.items.filter((item, index) => i !== index);
   }
 
   render(h) {
     return h`
-      <div>
-        <h1>To do list</h1>
-        <p>Total: ${this.state.items.length}</p>
-        <div style="margin-bottom:8px">
-          <button onclick=${this.addItem}>Add to do</button>  
+      <div class="box">
+        <h1 class="title">To do</h1>
+        <div class="header">
+          <p>Total: ${this.state.items.length}</p>
+          <button onclick=${this.addItem}>Add to do</button>
         </div>
         ${this.state.items.map(
-          (item) =>
-            h`<todo-item item=${item} remove=${this.removeItem}></todo-item>`,
+          (item, i) =>
+            h`<todo-item item=${item} remove=${() =>
+              this.removeItem(i)}></todo-item>`,
         )}
       </div>
     `;
@@ -74,13 +45,51 @@ class TodoItems extends Nho {
 }
 
 Nho.style = `
-div {
-  background: red;
-}
-
-.item {
-  color: blue;
-}
+  * {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .box {
+    width: 400px;
+    max-width: 100%;
+    padding: 8px;
+    background-color: whitesmoke;
+  }
+  
+  .title {
+    margin-bottom: 8px;
+  }
+  
+  .header, .item {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .header {
+    margin-bottom: 16px;
+  }
+  
+  .item {
+    margin-bottom: 4px;
+  }
+  
+  button {
+    padding: 4px 8px;
+    background: white;
+    border: none;
+  }
+  
+  button.remove-button {
+    background: red;
+    color: white;
+  }
+  
+  .item-text {
+    font-weight: 500;
+    color: orange
+  }
 `;
 customElements.define("todo-item", TodoItem);
 customElements.define("todo-items", TodoItems);

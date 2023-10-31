@@ -24,6 +24,6 @@
     "ignore": []
   },
   "files": {
-    "ignore": ["dist/*"]
+    "ignore": ["dist/*", "playground/dist/*"]
   }
 }
