@@ -6,7 +6,7 @@ class BigDaddy extends Nho {
   }
 
   onMounted() {
-    console.log('Mounted');
+    console.log("Mounted");
   }
 
   increase(e) {
@@ -15,7 +15,7 @@ class BigDaddy extends Nho {
   }
 
   someNumber() {
-    return 30
+    return 30;
   }
 
   render(h) {
@@ -25,26 +25,26 @@ class BigDaddy extends Nho {
         <span>Count: ${this.state.count}</span>
         <button on:click="${this.increase}">Increase</button>
       </div>
-    `
+    `;
   }
 }
 
-customElements.define('big-daddy', BigDaddy);
+customElements.define("big-daddy", BigDaddy);
 
 class TodoItem extends Nho {
   render(h) {
     return h`
       <div style="margin-bottom:4px">
         <button onclick=${() => this.props.remove(this.props.item)}>Remove</button>
-        <span>${this.props.item}</span>
+        <span class="item">${this.props.item}</span>
       </div>
-    `
+    `;
   }
 }
 
 class TodoItems extends Nho {
   setup() {
-    this.state = this.reactive({ items: ['new item 1', 'new item 2'] });
+    this.state = this.reactive({ items: [] });
   }
 
   addItem() {
@@ -52,7 +52,8 @@ class TodoItems extends Nho {
   }
 
   removeItem(v) {
-    this.state.items = this.state.items.filter(item => item !== v);
+    this.state.items = this.state.items.filter((item) => item !== v);
+    console.log(this.state.items.length);
   }
 
   render(h) {
@@ -63,11 +64,23 @@ class TodoItems extends Nho {
         <div style="margin-bottom:8px">
           <button onclick=${this.addItem}>Add to do</button>  
         </div>
-        ${this.state.items.map(item => h`<todo-item item=${item} remove=${this.removeItem}></todo-item>`)}
+        ${this.state.items.map(
+          (item) =>
+            h`<todo-item item=${item} remove=${this.removeItem}></todo-item>`,
+        )}
       </div>
-    `
+    `;
   }
 }
-customElements.define('todo-item', TodoItem);
-customElements.define('todo-items', TodoItems);
 
+Nho.style = `
+div {
+  background: red;
+}
+
+.item {
+  color: blue;
+}
+`;
+customElements.define("todo-item", TodoItem);
+customElements.define("todo-items", TodoItems);
