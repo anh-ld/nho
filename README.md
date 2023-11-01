@@ -10,12 +10,12 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 ### Features
 
-- 1.1KB gzipped.
+- 1.25KB gzipped.
 - Simple API, inspired from `Vue`.
 
 
 ### Example
-- [todo list](https://nho-example.netlify.app/) - [source](./playground)
+- [todo list](https://nho-example.netlify.app/) - [source](./example)
 
 ### Limitations
 

@@ -19,7 +19,7 @@ class TodoItems extends Nho {
     });
   }
 
-  fil() {
+  getFilteredItems() {
     if (!this.state.k) return this.state.items;
     return this.state.items.filter((i) => i.includes(this.state.k));
   }
@@ -28,6 +28,7 @@ class TodoItems extends Nho {
     const item = prompt("Please enter to do item");
     if (!item) return;
     this.state.items = [...this.state.items, item];
+    this.state.k = '';
   }
 
   removeItem(i) {
@@ -42,16 +43,14 @@ class TodoItems extends Nho {
     return h`
       <div class="box">
         <h1 class="title">To do</h1>
-        <input class="search" placeholder="Search" value=${
-          this.state.k
-        } data-id=${this.state.k} oninput=${this.updateK} />
+        <input class="search" placeholder="Search" value=${this.state.k} data-id=${this.state.k} oninput=${this.updateK} />
         <div class="header">
-          <p>Total: ${this.fil().length}</p>
-          <button onclick=${this.addItem}>Add to do</button>
+          <p>Total: ${this.getFilteredItems().length}</p>
+          <button class="add" onclick=${this.addItem}>Add to do</button>
         </div>
         ${
-          this.fil().length
-            ? this.fil().map(
+          this.getFilteredItems().length
+            ? this.getFilteredItems().map(
                 (item, i) =>
                   h`<todo-item p:item=${item} p:remove=${() =>
                     this.removeItem(i)}></todo-item>`,
@@ -74,8 +73,8 @@ Nho.style = `
   .box {
     width: 400px;
     max-width: 100%;
-    padding: 8px;
-    background-color: whitesmoke;
+    padding: 16px;
+    background-color: #efefef;
     min-height: 100vh;
   }
   
@@ -104,12 +103,21 @@ Nho.style = `
   .search {
     width: 100%;
     margin-bottom: 4px;
+    padding: 4px;
+    border-radius: 0;
+    outline: none;
+    border: 1px solid black;
   }
   
   button {
     padding: 4px 8px;
     background: white;
     border: none;
+  }
+  
+  button.add {
+    background: green;
+    color: white;
   }
   
   button.remove-button {
@@ -119,7 +127,7 @@ Nho.style = `
   
   .item-text {
     font-weight: 500;
-    color: orange
+    color: blue;
   }
 `;
 customElements.define("todo-item", TodoItem);

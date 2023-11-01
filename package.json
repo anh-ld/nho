@@ -23,7 +23,7 @@
     "build": "vite build --mode=lib",
     "build:example": "vite build --mode=example",
     "check": "npx @biomejs/biome check --apply .",
-    "clean": "rm -rf dist playground/dist",
+    "clean": "rm -rf dist example/dist",
     "dev": "vite"
   },
   "devDependencies": {

@@ -24,7 +24,7 @@ export default defineConfig(({ command, mode }) => {
   };
 
   if (command === "serve" || (command === "build" && mode === "example")) {
-    config.root = resolve(__dirname, "./playground");
+    config.root = resolve(__dirname, "./example");
   } else if (command === "build" && mode === "lib") {
     config.root = resolve(__dirname, "./");
     config.build.lib = {
