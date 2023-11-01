@@ -66,13 +66,13 @@ class MyCounter extends Nho {
       SAME AS MODERN FRONT FRAMEWORKS
       - Must have only 1 root element
       - Bind state / event using value in literal string
-      - Pass state to child element using props
+      - Pass state to child element using props with 'p:' prefix
      */
     return h`
       <div class="box">
         <p>Name: ${this.state.count}</p>
         <button onclick=${this.addCount}>Add count</button>
-        <my-counter-child count=${this.state.count + 5}></my-counter-child>
+        <my-counter-child p:count=${this.state.count + 5}></my-counter-child>
       </div>
     `
   }

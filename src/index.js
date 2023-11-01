@@ -45,12 +45,13 @@ export class Nho extends HTMLElement {
     // loop through each new node, compare with current
     nNodes.forEach((_, i) => {
       if (!cNodes[i]) current.appendChild(nNodes[i].cloneNode(true));
+      else if (nNodes[i].childNodes.length) this._patch(cNodes[i], nNodes[i]);
       else if (
         cNodes[i].tagName !== nNodes[i].tagName ||
         cNodes[i].textContent !== nNodes[i].textContent
       ) {
         cNodes[i].parentNode.replaceChild(nNodes[i].cloneNode(true), cNodes[i]);
-      } else if (nNodes[i].childNodes.length) this._patch(cNodes[i], nNodes[i]);
+      }
       // if custom elements and same tag, then update props from new node to old node -> update
       else if (cNodes[i]._id) {
         cNodes[i]._update(this._gProp(nNodes[i].attributes));
@@ -66,14 +67,18 @@ export class Nho extends HTMLElement {
         .map((s, index, arr) => {
           if (index === arr.length - 1) values[index] = "";
           else if (s.endsWith("=")) {
-            const key = this._gId();
-            Nho.cache.set(
-              key,
-              typeof values[index] === "function"
-                ? values[index].bind(this)
-                : values[index],
-            );
-            values[index] = key;
+            if (/(p:|on).*$/.test(s)) {
+              const key = this._gId();
+              Nho.cache.set(
+                key,
+                typeof values[index] === "function"
+                  ? values[index].bind(this)
+                  : values[index],
+              );
+              values[index] = key;
+            } else {
+              values[index] = JSON.stringify(values[index])
+            }
           } else if (Array.isArray(values[index])) {
             values[index] = values[index].join("");
           }
@@ -129,7 +134,7 @@ export class Nho extends HTMLElement {
     return [...attrs].reduce(
       (acc, { nodeName, nodeValue }) => ({
         ...acc,
-        [nodeName]: Nho.cache.get(nodeValue),
+        [nodeName.startsWith('p:') ? nodeName.slice(2): nodeName]: Nho.cache.get(nodeValue),
       }),
       {},
     );
@@ -149,3 +154,5 @@ export class Nho extends HTMLElement {
   static style = "";
   static cache = new Map();
 }
+
+if (import.meta.env.DEV) window.Nho = Nho;

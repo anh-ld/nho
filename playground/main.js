@@ -26,17 +26,23 @@ class TodoItems extends Nho {
     this.state.items = this.state.items.filter((item, index) => i !== index);
   }
 
+  updateK(e) {
+    this.state.k = e.target.value;
+  }
+
   render(h) {
     return h`
       <div class="box">
         <h1 class="title">To do</h1>
+        <input value=${this.state.k} data-id=${this.state.k} oninput=${this.updateK} />
+        <div>Search: ${this.state.k}</div>
         <div class="header">
           <p>Total: ${this.state.items.length}</p>
           <button onclick=${this.addItem}>Add to do</button>
         </div>
         ${this.state.items.map(
           (item, i) =>
-            h`<todo-item item=${item} remove=${() =>
+            h`<todo-item p:item=${item} p:remove=${() =>
               this.removeItem(i)}></todo-item>`,
         )}
       </div>
