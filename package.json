@@ -1,7 +1,7 @@
 {
   "name": "nho",
+  "version": "0.0.0",
   "description": "1KB Web Component abstraction",
-  "version": "0.0.1",
   "keywords": [
     "nho",
     "web component"
@@ -35,10 +35,16 @@
     "build:example": "vite build --mode=example",
     "check": "npx @biomejs/biome check --apply .",
     "clean": "rm -rf dist example/dist",
-    "dev": "vite"
+    "dev": "vite",
+    "release": "release-it"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npm run check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.3.3",
+    "release-it": "^16.2.1",
+    "simple-git-hooks": "^2.9.0",
     "vite": "^4.4.5"
   }
 }
