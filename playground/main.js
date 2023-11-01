@@ -13,7 +13,15 @@ class TodoItem extends Nho {
 
 class TodoItems extends Nho {
   setup() {
-    this.state = this.reactive({ items: [], k: '' });
+    this.state = this.reactive({
+      items: ["clean bedroom", "workout", "gardening", "call Perry"],
+      k: "",
+    });
+  }
+
+  fil() {
+    if (!this.state.k) return this.state.items;
+    return this.state.items.filter((i) => i.includes(this.state.k));
   }
 
   addItem() {
@@ -34,17 +42,22 @@ class TodoItems extends Nho {
     return h`
       <div class="box">
         <h1 class="title">To do</h1>
-        <input value=${this.state.k} data-id=${this.state.k} oninput=${this.updateK} />
-        <div>Search: ${this.state.k}</div>
+        <input class="search" placeholder="Search" value=${
+          this.state.k
+        } data-id=${this.state.k} oninput=${this.updateK} />
         <div class="header">
-          <p>Total: ${this.state.items.length}</p>
+          <p>Total: ${this.fil().length}</p>
           <button onclick=${this.addItem}>Add to do</button>
         </div>
-        ${this.state.items.map(
-          (item, i) =>
-            h`<todo-item p:item=${item} p:remove=${() =>
-              this.removeItem(i)}></todo-item>`,
-        )}
+        ${
+          this.fil().length
+            ? this.fil().map(
+                (item, i) =>
+                  h`<todo-item p:item=${item} p:remove=${() =>
+                    this.removeItem(i)}></todo-item>`,
+              )
+            : "<div>Nothing</div>"
+        }
       </div>
     `;
   }
@@ -55,6 +68,7 @@ Nho.style = `
     font-family: system-ui, sans-serif;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
   }
   
   .box {
@@ -62,6 +76,7 @@ Nho.style = `
     max-width: 100%;
     padding: 8px;
     background-color: whitesmoke;
+    min-height: 100vh;
   }
   
   .title {
@@ -71,13 +86,23 @@ Nho.style = `
   .header, .item {
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
   
   .header {
     margin-bottom: 16px;
   }
   
+  .header p {
+    font-size: 14px;
+  }
+  
   .item {
+    margin-bottom: 4px;
+  }
+  
+  .search {
+    width: 100%;
     margin-bottom: 4px;
   }
   

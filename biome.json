@@ -12,6 +12,9 @@
       },
       "performance": {
         "noAccumulatingSpread": "off"
+      },
+      "style": {
+        "useConst": "off"
       }
     }
   },

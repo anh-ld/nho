@@ -20,82 +20,88 @@ export class Nho extends HTMLElement {
   /* INTERNAL FUNCTIONS */
 
   _update(newProp) {
-    const oldProp = this.props;
+    let oldProp = { ...this.props };
     this.props = newProp || this._gProp(this.shadowRoot.host.attributes);
     // avoid update when props is not changed (shallow compare)
     if (newProp && this._sC(oldProp, this.props)) return;
 
-    const str = this.render(this._h.bind(this));
-    const { body, head } = new DOMParser().parseFromString(str, "text/html");
-    this._patch(this.shadowRoot, body, head.childNodes[0]);
+    let str = this.render(this._h.bind(this));
+    let { body } = new DOMParser().parseFromString(str, "text/html");
+    let styleElement = document.createElement("style");
+    styleElement.innerHTML = Nho.style;
+    this._patch(this.shadowRoot, body, styleElement);
     this._event();
     this.onUpdate?.();
   }
 
   // dom diffing
   _patch(current, next, styleNode) {
-    // remove spare nodes
-    const cNodes = Array.from(current.childNodes || []);
-    const nNodes = Array.from(next.childNodes || []);
+    let cNodes = Array.from(current.childNodes || []);
+    let nNodes = Array.from(next.childNodes || []);
     if (styleNode) nNodes.unshift(styleNode);
 
-    const gap = cNodes.length - nNodes.length;
-    if (gap > 0) [...cNodes].splice(gap * -1);
+    // compare new nodes and old nodes, if old nodes > new nodes, then remove the gap
+    let gap = cNodes.length - nNodes.length;
+    if (gap > 0) for (; gap > 0; gap--) current.removeChild(current.lastChild);
 
     // loop through each new node, compare with current
     nNodes.forEach((_, i) => {
-      if (!cNodes[i]) current.appendChild(nNodes[i].cloneNode(true));
-      else if (nNodes[i].childNodes.length) this._patch(cNodes[i], nNodes[i]);
-      else if (
-        cNodes[i].tagName !== nNodes[i].tagName ||
-        cNodes[i].textContent !== nNodes[i].textContent
-      ) {
-        cNodes[i].parentNode.replaceChild(nNodes[i].cloneNode(true), cNodes[i]);
-      }
+      let c = cNodes[i];
+      let n = nNodes[i];
+
+      // replace old node by new node
+      let replace = () => c.parentNode.replaceChild(n.cloneNode(true), c);
+
+      if (!c) current.appendChild(n.cloneNode(true));
+      else if (c.tagName !== n.tagName) replace();
+      else if (n.childNodes.length) this._patch(c, n);
       // if custom elements and same tag, then update props from new node to old node -> update
-      else if (cNodes[i]._id) {
-        cNodes[i]._update(this._gProp(nNodes[i].attributes));
-      }
+      // c._h is a tricky way to check if it's custom element
+      else if (c._h) c._update(this._gProp(n.attributes));
+      else if (c.textContent !== n.textContent) replace();
     });
   }
 
   // render html string
   _h(str, ...values) {
-    return (
-      `<style>${Nho.style}</style>` +
-      str
-        .map((s, index, arr) => {
-          if (index === arr.length - 1) values[index] = "";
-          else if (s.endsWith("=")) {
-            if (/(p:|on).*$/.test(s)) {
-              const key = this._gId();
-              Nho.cache.set(
-                key,
-                typeof values[index] === "function"
-                  ? values[index].bind(this)
-                  : values[index],
-              );
-              values[index] = key;
-            } else {
-              values[index] = JSON.stringify(values[index])
-            }
-          } else if (Array.isArray(values[index])) {
-            values[index] = values[index].join("");
-          }
+    return str
+      .map((s, index, arr) => {
+        let currentValue = values[index];
+        let valueString = currentValue;
 
-          return s + values[index];
-        })
-        .join("")
-    );
+        // if last index, there is no currentValue
+        if (index === arr.length - 1) valueString = "";
+        else if (s.endsWith("=")) {
+          // if attribute starts with 'p:' or 'on', then cache value
+          if (/(p:|on).*$/.test(s)) {
+            let key = this._gId();
+            Nho.cache.set(
+              key,
+              typeof currentValue === "function"
+                ? currentValue.bind(this)
+                : currentValue,
+            );
+            valueString = key;
+          }
+          // else, then stringify
+          else valueString = JSON.stringify(currentValue);
+        }
+        // if value is array, then turn it into string
+        else if (Array.isArray(currentValue)) {
+          valueString = currentValue.join("");
+        }
+
+        return s + valueString;
+      })
+      .join("");
   }
 
   // bind events to dom
   _event() {
     this.shadowRoot.querySelectorAll("*").forEach((node) => {
       [...node.attributes].forEach(({ name, value }) => {
-        if (name.startsWith("on")) {
+        if (name.startsWith("on"))
           node[name] = (e) => Nho.cache.get(value).call(this, e);
-        }
       });
     });
   }
@@ -111,8 +117,8 @@ export class Nho extends HTMLElement {
           target[key] = value;
 
           // batch update each requestAnimationFrame;
-          if (time) cancelAnimationFrame(time)
-          time = requestAnimationFrame(() => this._update())
+          if (time) cancelAnimationFrame(time);
+          time = requestAnimationFrame(() => this._update());
         }
         return true;
       },
@@ -132,9 +138,9 @@ export class Nho extends HTMLElement {
   // get props object
   _gProp(attrs) {
     return [...attrs].reduce(
-      (acc, { nodeName, nodeValue }) => ({
+      (acc, { nodeName: n, nodeValue }) => ({
         ...acc,
-        [nodeName.startsWith('p:') ? nodeName.slice(2): nodeName]: Nho.cache.get(nodeValue),
+        [n.startsWith("p:") ? n.slice(2) : n]: Nho.cache.get(nodeValue),
       }),
       {},
     );
@@ -142,11 +148,10 @@ export class Nho extends HTMLElement {
 
   // shallow compare
   _sC(obj1, obj2) {
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
+    let k1 = Object.keys(obj1);
+    let k2 = Object.keys(obj2);
     return (
-      keys1.length === keys2.length &&
-      keys1.every((key) => obj1[key] === obj2[key])
+      k1.length === k2.length && k1.every((key) => obj1[key] === obj2[key])
     );
   }
 
@@ -155,4 +160,5 @@ export class Nho extends HTMLElement {
   static cache = new Map();
 }
 
+// FOR DEVELOPMENT PURPOSES
 if (import.meta.env.DEV) window.Nho = Nho;

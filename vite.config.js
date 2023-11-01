@@ -5,13 +5,11 @@ import packageContent from "./package.json";
 
 function minifyEs() {
   return {
-    name: "minifyEs",
     renderChunk: {
       order: "post",
       async handler(code, chunk, outputOptions) {
-        if (outputOptions.format === "es") {
+        if (outputOptions.format === "es")
           return await transform(code, { minify: true });
-        }
         return code;
       },
     },
@@ -21,9 +19,7 @@ function minifyEs() {
 export default defineConfig(({ command, mode }) => {
   let config = {
     plugins: [minifyEs()],
-    resolve: {
-      alias: { "@": resolve(__dirname, "./src") },
-    },
+    resolve: { alias: { "@": resolve(__dirname, "./src") } },
     build: { emptyOutDir: true },
   };
 
