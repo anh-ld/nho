@@ -59,7 +59,6 @@ export class Nho extends HTMLElement {
       // c._h is a tricky way to check if it's custom element
       else if (c._h) c._update(this._gProp(n.attributes));
       else if (c.textContent !== n.textContent) replace();
-
       // compare attributes
       else if (n?.attributes) {
         for (let { name, value } of Array.from(n.attributes)) {

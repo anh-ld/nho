@@ -28,7 +28,7 @@ class TodoItems extends Nho {
     const item = prompt("Please enter to do item");
     if (!item) return;
     this.state.items = [...this.state.items, item];
-    this.state.k = '';
+    this.state.k = "";
   }
 
   removeItem(i) {
@@ -43,7 +43,9 @@ class TodoItems extends Nho {
     return h`
       <div class="box">
         <h1 class="title">To do</h1>
-        <input class="search" placeholder="Search" value=${this.state.k} data-id=${this.state.k} oninput=${this.updateK} />
+        <input class="search" placeholder="Search" value=${
+          this.state.k
+        } data-id=${this.state.k} oninput=${this.updateK} />
         <div class="header">
           <p>Total: ${this.getFilteredItems().length}</p>
           <button class="add" onclick=${this.addItem}>Add to do</button>
