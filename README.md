@@ -15,7 +15,7 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 
 ### Example
-- [A todo list](https://nho-example.netlify.app/) - [Source](./playground)
+- [todo list](https://nho-example.netlify.app/) - [source](./playground)
 
 ### Limitations
 

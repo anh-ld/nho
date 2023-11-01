@@ -13,7 +13,7 @@ class TodoItem extends Nho {
 
 class TodoItems extends Nho {
   setup() {
-    this.state = this.reactive({ items: [] });
+    this.state = this.reactive({ items: [], k: '' });
   }
 
   addItem() {

@@ -3,7 +3,6 @@ export class Nho extends HTMLElement {
 
   constructor() {
     super();
-    this._id = this._gId();
     this.props = {};
     this.attachShadow({ mode: "open" });
   }
@@ -99,11 +98,16 @@ export class Nho extends HTMLElement {
   /* API */
 
   reactive(state) {
+    let time;
+
     return new Proxy(state, {
       set: (target, key, value) => {
         if (!(key in target) || target[key] !== value) {
           target[key] = value;
-          this._update();
+
+          // batch update each requestAnimationFrame;
+          if (time) cancelAnimationFrame(time)
+          time = requestAnimationFrame(() => this._update())
         }
         return true;
       },
@@ -120,7 +124,7 @@ export class Nho extends HTMLElement {
     return Math.random().toString(36).slice(2);
   }
 
-  // get props
+  // get props object
   _gProp(attrs) {
     return [...attrs].reduce(
       (acc, { nodeName, nodeValue }) => ({
