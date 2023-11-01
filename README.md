@@ -25,7 +25,7 @@ If your components get too complex, consider other options.
 
 ### Usage
 
-```
+```js
 import { Nho } from 'nho'
 
 /* Declare global styles. Styles will be injected to all Nho Element */
