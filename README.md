@@ -4,7 +4,7 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny JavaScript library for easy We
 
 ### Why Nho?
 
-Creating Web Components can be tedious if you use vanilla JavaScript. On the other hand, popular frameworks are hefty
+- Creating Web Components can be tedious if you use vanilla JavaScript. On the other hand, popular frameworks are hefty
 (4KB+) for writing just a small web component. `Nho` keeps it lightweight by stripping advanced APIs
 and implementing a very simple DOM diffing algorithm in behind.
 
@@ -19,7 +19,7 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 ### Limitations
 
-Nho skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `watch`, etc to stay small.
+- `Nho` skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `watch`, etc to stay small.
 The DOM diffing algorithm is kinda naive (it's fast enough for small project).
 If your components get too complex, consider other options.
 
@@ -82,3 +82,9 @@ class MyCounter extends Nho {
 customElements.define("my-counter", MyCounter);
 customElements.define("my-counter-child", MyCounterChild);
 ```
+
+#### How it works
+
+- It's better to dive into the code, but here is a quick sketch about how `Nho` works.
+
+![How Nho works](./hiw.png)
