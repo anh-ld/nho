@@ -23,16 +23,45 @@ and implementing a very simple DOM diffing algorithm in behind.
 The DOM diffing algorithm is kinda naive (it's fast enough for small project).
 If your components get too complex, consider other options.
 
+### Installation
+
+#### npm
+First, run
+
+```
+npm install nho
+```
+
+then
+```js
+import { Nho } from 'nho';
+class MyCounterChild extends Nho {}
+```
+
+
+#### CDN
+First, add `script` to the `html` file
+```html
+<script src="https://unpkg.com/nho"></script>
+```
+
+then
+
+```html
+<script>
+  let Nho = nho.Nho;
+  class MyCounterChild extends Nho {}
+</script>
+```
+
 ### Usage
 
 ```js
-import { Nho } from 'nho'
-
 /* Declare global styles. Styles will be injected to all Nho Element */
 Nho.style = `
   .box {
     background: blue;
-    color: green;
+    color: yellow;
   }
 `
 
@@ -83,7 +112,11 @@ customElements.define("my-counter", MyCounter);
 customElements.define("my-counter-child", MyCounterChild);
 ```
 
-#### How it works
+```html
+<my-counter></my-counter>
+```
+
+### How it works
 
 - It's better to dive into the code, but here is a quick sketch about how `Nho` works.
 
