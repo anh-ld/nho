@@ -3,18 +3,15 @@ import { transform } from "esbuild";
 import { defineConfig } from "vite";
 import packageContent from "./package.json";
 
-function minifyEs() {
-  return {
-    renderChunk: {
-      order: "post",
-      async handler(code, chunk, outputOptions) {
-        if (outputOptions.format === "es")
-          return await transform(code, { minify: true });
-        return code;
-      },
+const minifyEs = () => ({
+  renderChunk: {
+    order: "post",
+    async handler(code, _, { format }) {
+      if (format === "es") return await transform(code, { minify: true });
+      return code;
     },
-  };
-}
+  },
+});
 
 export default defineConfig(({ command, mode }) => {
   let config = {

@@ -24,7 +24,6 @@
     "./dist/": "./dist/"
   },
   "main": "./dist/index.umd.js",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "src",
@@ -36,13 +35,16 @@
     "check": "npx @biomejs/biome check --apply .",
     "clean": "rm -rf dist example/dist",
     "dev": "vite",
+    "postinstall": "simple-git-hooks",
     "release": "release-it"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run check"
+    "pre-commit": "npm run check",
+    "commit-msg": "npx @n6ai/verify-commit-msg@latest $1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.3.3",
+    "@n6ai/verify-commit-msg": "^1.2.0",
     "release-it": "^16.2.1",
     "simple-git-hooks": "^2.9.0",
     "vite": "^4.4.5"
