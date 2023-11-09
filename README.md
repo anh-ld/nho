@@ -15,7 +15,7 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 
 ### Example
-- [todo list](https://nho-example.netlify.app/) - [source](./example)
+- [album list](https://nho-example.netlify.app/) - [source](./example)
 
 ### Limitations
 
@@ -82,11 +82,26 @@ class MyCounter extends Nho {
   
   onMounted() {
     /* This method run after mount */
-    console.log('Mounted')
+    console.log('Mounted');
   }
   
   addCount() {
+    /* Update state by redeclare its key-value. Avoid update the whole state. */
     this.state.count += 1;
+  }
+  
+  onUpdated(oldProps, newProps) {
+    /*
+      This method run after each update.
+      There are 2 params: 'oldProps' and 'newProps'.
+      There is no 'state' params since you can actively take care of its change.
+    */
+    console.log('Props', oldProps, newProps);
+  }
+  
+  onUnmounted() {
+    /* This method run before unmount */
+    console.log('Before unmount');
   }
   
   render(h) {
@@ -120,4 +135,4 @@ customElements.define("my-counter-child", MyCounterChild);
 
 - It's better to dive into the code, but here is a quick sketch about how `Nho` works.
 
-![How Nho works](./hiw.png)
+![How Nho works](./hiw.webp)

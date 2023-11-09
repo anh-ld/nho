@@ -1,136 +1,191 @@
 import { Nho } from "@";
 
-class TodoItem extends Nho {
+Nho.style = `
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, sans-serif;
+  }
+  
+  h1 {
+    margin-bottom: 20px;
+  }
+  
+  input {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 0;
+    outline: none;
+    padding: 8px;
+    border: 1px solid black;
+  }
+  
+  button {
+    cursor: pointer;
+    border: none;
+    padding: 8px;
+  }
+  
+  .selected {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: PaleTurquoise;
+    align-items: center;
+    overflow: auto;
+    padding: 16px;
+  }
+  
+  .selected-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .selected-close {
+    background: black;
+    color: white;
+  }
+  
+  .selected .images, .albums {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .selected .image-item {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .selected .image-item img {
+    height: 48px;
+    width: 48px;
+  } 
+  
+  .album-item {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .album-item button {
+    background: PaleTurquoise;
+    color: blue;
+  }
+`;
+
+class SelectedAlbum extends Nho {
   render(h) {
     return h`
-      <div class="item">
-        <span class="item-text">${this.props.item}</span>
-        <button class="remove-button" onclick=${this.props.remove}>Remove</button>
+      <div class="selected">
+        <div>
+          <div class="selected-title">
+            <h1>Album ${this.props.album[0].albumId} images</h1>
+            <button onclick=${this.props.hide} class="selected-close">Close</button>
+          </div>
+          <div class="images">
+            ${this.props.album.map(
+              (img) => h`
+              <div class="image-item">
+                <img src=${img.thumbnailUrl} />
+                <div>${img.title}</div>
+              </div>
+            `,
+            )}
+          </div>
+        </div>
       </div>
     `;
   }
 }
 
-class TodoItems extends Nho {
+class AlbumItem extends Nho {
+  render(h) {
+    return h`
+      <div class="album-item">
+        <button onclick=${this.props.view}>View album images</button>
+        <div>${this.props.title}</div>
+      </div>
+    `;
+  }
+}
+
+class AlbumList extends Nho {
   setup() {
     this.state = this.reactive({
-      items: ["clean bedroom", "workout", "gardening", "call Perry"],
-      k: "",
+      albums: [],
+      isFetched: false,
+      selectedAlbum: undefined,
+      search: "",
     });
   }
 
-  getFilteredItems() {
-    if (!this.state.k) return this.state.items;
-    return this.state.items.filter((i) => i.includes(this.state.k));
+  matchedAlbums() {
+    if (!this.state.search) return this.state.albums;
+    return this.state.albums.filter((v) =>
+      v.title.toLowerCase().includes(this.state.search.toLowerCase()),
+    );
   }
 
-  addItem() {
-    const item = prompt("Please enter to do item");
-    if (!item) return;
-    this.state.items = [...this.state.items, item];
-    this.state.k = "";
+  async onMounted() {
+    const response = await fetch("https://jsonplaceholder.typicode.com/albums");
+    this.state.albums = (await response.json()) || [];
+    this.state.isFetched = true;
   }
 
-  removeItem(i) {
-    this.state.items = this.state.items.filter((item, index) => i !== index);
+  async viewAlbum(id) {
+    const response = await fetch(
+      `https://jsonplaceholder.typicode.com/albums/${id}/photos`,
+    );
+    this.state.selectedAlbum = (await response.json()) || [];
+    document.body.style.overflow = "hidden";
   }
 
-  updateK(e) {
-    this.state.k = e.target.value;
+  hideAlbum() {
+    this.state.selectedAlbum = undefined;
+    document.body.style.overflow = "initial";
+  }
+
+  searchValue(e) {
+    this.state.search = e.target.value;
   }
 
   render(h) {
+    if (!this.state.isFetched)
+      return h`<div class="loading">fetching images...</div>`;
+    if (!this.state.albums.length) return h`<div>no albums found</div>`;
+
     return h`
-      <div class="box">
-        <h1 class="title">To do</h1>
-        <input class="search" placeholder="Search" value=${
-          this.state.k
-        } data-id=${this.state.k} oninput=${this.updateK} />
-        <div class="header">
-          <p>Total: ${this.getFilteredItems().length}</p>
-          <button class="add" onclick=${this.addItem}>Add to do</button>
+      <div>
+        <h1>Albums</h1>
+        <input
+          placeholder="Search album"
+          value=${this.state.search}
+          oninput=${this.searchValue}
+        />
+        <div class="albums">
+          ${this.matchedAlbums().map(
+            (album) =>
+              h`<album-item p:title=${album.title} p:view=${() =>
+                this.viewAlbum(album.id)}></album-item>`,
+          )}
         </div>
         ${
-          this.getFilteredItems().length
-            ? this.getFilteredItems().map(
-                (item, i) =>
-                  h`<todo-item p:item=${item} p:remove=${() =>
-                    this.removeItem(i)}></todo-item>`,
-              )
-            : "<div>Nothing</div>"
+          this.state.selectedAlbum
+            ? h`<selected-album p:album=${this.state.selectedAlbum} p:hide=${this.hideAlbum}></selected-album>`
+            : ""
         }
       </div>
     `;
   }
 }
 
-Nho.style = `
-  * {
-    font-family: system-ui, sans-serif;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  .box {
-    width: 400px;
-    max-width: 100%;
-    padding: 16px;
-    background-color: #efefef;
-    min-height: 100vh;
-  }
-  
-  .title {
-    margin-bottom: 8px;
-  }
-  
-  .header, .item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .header {
-    margin-bottom: 16px;
-  }
-  
-  .header p {
-    font-size: 14px;
-  }
-  
-  .item {
-    margin-bottom: 4px;
-  }
-  
-  .search {
-    width: 100%;
-    margin-bottom: 4px;
-    padding: 4px;
-    border-radius: 0;
-    outline: none;
-    border: 1px solid black;
-  }
-  
-  button {
-    padding: 4px 8px;
-    background: white;
-    border: none;
-  }
-  
-  button.add {
-    background: green;
-    color: white;
-  }
-  
-  button.remove-button {
-    background: red;
-    color: white;
-  }
-  
-  .item-text {
-    font-weight: 500;
-    color: blue;
-  }
-`;
-customElements.define("todo-item", TodoItem);
-customElements.define("todo-items", TodoItems);
+customElements.define("album-list", AlbumList);
+customElements.define("album-item", AlbumItem);
+customElements.define("selected-album", SelectedAlbum);

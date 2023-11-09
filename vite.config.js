@@ -18,12 +18,19 @@ export default defineConfig(({ command, mode }) => {
     plugins: [minifyEs()],
     resolve: { alias: { "@": resolve(__dirname, "./src") } },
     build: { emptyOutDir: true },
+    test: {
+      root: "./src",
+      environment: "jsdom",
+    },
   };
 
   if (command === "serve" || (command === "build" && mode === "example")) {
     config.root = resolve(__dirname, "./example");
-  } else if (command === "build" && mode === "lib") {
+  }
+
+  if (command === "build" && mode === "lib") {
     config.root = resolve(__dirname, "./");
+
     config.build.lib = {
       entry: resolve(__dirname, "./src/index.js"),
       formats: ["es", "umd"],

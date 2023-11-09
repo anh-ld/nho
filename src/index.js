@@ -36,7 +36,7 @@ export class Nho extends HTMLElement {
 
     this._p(this.shadowRoot, body, styleElement);
     this._e();
-    this.onUpdate?.();
+    this.onUpdate?.(oldProps, newProps);
   }
 
   // patching, dom diffing
@@ -70,10 +70,12 @@ export class Nho extends HTMLElement {
 
       // compare attributes
       if (c?.attributes) {
-        for (let { name, value } of [...(n?.attributes || [])]) {
+        // remove all old attributes
+        while (c.attributes.length > 0) c.removeAttribute(c.attributes[0].name);
+
+        // add new attributes
+        for (let { name, value } of [...(n?.attributes || [])])
           c.setAttribute(name, value);
-          c[name] = value;
-        }
       }
     });
   }
