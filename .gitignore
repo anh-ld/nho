@@ -25,3 +25,4 @@ dist-ssr
 
 docs/.vitepress/dist
 docs/.vitepress/dist
+coverage

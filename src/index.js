@@ -149,10 +149,6 @@ export class Nho extends HTMLElement {
     });
   }
 
-  nextTick() {
-    return new Promise((r) => requestAnimationFrame(r));
-  }
-
   /* HELPER FUNCTIONS */
 
   // generate unique id

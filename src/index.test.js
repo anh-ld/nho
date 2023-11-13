@@ -2,9 +2,15 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Nho } from "./";
 
-const tick = () => new Promise((r) => setTimeout(r, 100));
+const tick = () => new Promise((r) => setTimeout(r, 500));
 
-class HelloWorld extends Nho {
+class ChildElement extends Nho {
+  render(h) {
+    h`<p>${this.props.count}</p>`;
+  }
+}
+
+class ParentElement extends Nho {
   setup() {
     this.state = this.reactive({ count: 1 });
   }
@@ -18,15 +24,20 @@ class HelloWorld extends Nho {
       <div>
         <p>Count: ${this.state.count}</p>
         <button onclick=${this.increase}>Increase</button>
+        ${Array.from(Array(this.state.count), (_, index) => index + 1).map(
+          (v) => h`<child-element p:count=${v}></child-element>`,
+        )}
       </div>
     `;
   }
 }
 
-customElements.define("hello-world", HelloWorld);
+customElements.define("parent-element", ParentElement);
+customElements.define("child-element", ChildElement);
 
 describe("test the library", () => {
-  const name = "hello-world";
+  const name = "parent-element";
+  const childName = "child-element";
 
   beforeEach(() => {
     const element = document.createElement(name);
@@ -60,9 +71,22 @@ describe("test the library", () => {
     expect(button).toHaveTextContent("Increase");
 
     button.click();
-
     await tick();
 
     expect(content).toHaveTextContent("Count: 2");
+  });
+
+  it("should render child elements with correct props", async () => {
+    const element = document.querySelector(name);
+    const button = element.shadowRoot.querySelector("button");
+    const getChild = () => element.shadowRoot.querySelectorAll(childName);
+
+    expect(getChild().length).toBe(1);
+
+    button.click();
+    await tick();
+
+    let newChild = getChild();
+    expect(newChild.length).toBe(2);
   });
 });
