@@ -2,11 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Nho } from "./";
 
-const tick = () => new Promise((r) => setTimeout(r, 500));
+const tick = () => new Promise((r) => setTimeout(r, 100));
 
 class ChildElement extends Nho {
   render(h) {
-    h`<p>${this.props.count}</p>`;
+    return h`<p>${this.props.count}</p>`;
   }
 }
 
@@ -42,6 +42,12 @@ describe("test the library", () => {
   beforeEach(() => {
     const element = document.createElement(name);
     document.body.appendChild(element);
+
+    Nho.style = `
+      p {
+        color: red;
+      }
+    `;
   });
 
   afterEach(() => {
@@ -88,5 +94,17 @@ describe("test the library", () => {
 
     let newChild = getChild();
     expect(newChild.length).toBe(2);
+
+    expect(newChild[0].shadowRoot).toHaveTextContent("1");
+    expect(newChild[1].shadowRoot).toHaveTextContent("2");
+  });
+
+  it("should render correct styles", async () => {
+    const element = document.querySelector(name);
+    const children = element.shadowRoot.querySelectorAll(childName);
+    const styleTag = children[0].shadowRoot.querySelector("style");
+
+    expect(styleTag).toBeInTheDocument();
+    expect(styleTag).toHaveTextContent("color: red;");
   });
 });

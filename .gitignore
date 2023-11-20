@@ -26,3 +26,7 @@ dist-ssr
 docs/.vitepress/dist
 docs/.vitepress/dist
 coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
