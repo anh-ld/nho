@@ -1,23 +1,37 @@
 import { resolve } from "path";
 import { transform } from "esbuild";
 import { defineConfig } from "vite";
-import packageContent from "./package.json";
+import { name } from "./package.json";
 
-const minifyEs = () => ({
+// minify plugin, based on esbuild's native method
+const minifyEs = {
   renderChunk: {
     order: "post",
     async handler(code, _, { format }) {
       if (format === "es") return await transform(code, { minify: true });
+
       return code;
     },
   },
-});
+};
 
+// paths
+const srcPath = resolve(__dirname, "./src");
+const examplePath = resolve(__dirname, "./example");
+const rootPath = resolve(__dirname, "./");
+
+// config
 export default defineConfig(({ command, mode }) => {
-  let config = {
-    plugins: [minifyEs()],
-    resolve: { alias: { "@": resolve(__dirname, "./src") } },
-    build: { emptyOutDir: true },
+  const config = {
+    plugins: [minifyEs],
+    resolve: {
+      alias: {
+        "@": srcPath,
+      },
+    },
+    build: {
+      emptyOutDir: true,
+    },
     test: {
       root: "./src",
       environment: "jsdom",
@@ -25,16 +39,16 @@ export default defineConfig(({ command, mode }) => {
   };
 
   if (command === "serve" || (command === "build" && mode === "example")) {
-    config.root = resolve(__dirname, "./example");
+    config.root = examplePath;
   }
 
   if (command === "build" && mode === "lib") {
-    config.root = resolve(__dirname, "./");
+    config.root = rootPath;
 
     config.build.lib = {
-      entry: resolve(__dirname, "./src/index.js"),
+      entry: srcPath,
       formats: ["es", "umd"],
-      name: packageContent.name,
+      name,
       fileName: (format) => `index.${format}.js`,
     };
   }

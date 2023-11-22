@@ -158,7 +158,7 @@ class AlbumList extends Nho {
 
   render(h) {
     if (!this.state.isFetched)
-      return h`<div class="loading">fetching images...</div>`;
+      return h`<div class="loading">fetching albums...</div>`;
     if (!this.state.albums.length) return h`<div>no albums found</div>`;
 
     return h`

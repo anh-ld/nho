@@ -10,7 +10,7 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 ### Features
 
-- 1.25KB gzipped.
+- 1.2KB gzipped.
 - Simple API, inspired from `Vue`.
 
 
@@ -57,7 +57,7 @@ then
 ### Usage
 
 ```js
-/* Declare global styles. Styles will be injected to all Nho Element */
+/* Declare global styles. Styles will be injected to all Nho Elements */
 Nho.style = `
   .box {
     background: blue;
