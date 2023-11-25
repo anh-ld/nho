@@ -10,6 +10,12 @@ export class Nho extends HTMLElement {
     // current props
     this.props = {};
 
+    // effect fns, e.g: () => this.state.count
+    this._ef = new Map();
+
+    // effect values, e.g: ;(() => this.state.count)()
+    this._ev = new Map();
+
     this.attachShadow({ mode: "open" });
   }
 
@@ -18,13 +24,13 @@ export class Nho extends HTMLElement {
     this._sr = this.shadowRoot;
 
     // set host attributes to be props
-    this._g(this._sr.host.attributes);
+    this._ga(this._sr.host.attributes);
 
     // run setup before mounting
     this.setup?.();
 
     // update without callback fn
-    this._u(false, false);
+    this._u();
 
     // run onMounted callback if needed
     this.onMounted?.();
@@ -37,9 +43,9 @@ export class Nho extends HTMLElement {
   /* INTERNAL FUNCTIONS */
 
   // update
-  _u(shouldShallowCompareProps = false, callback = this.onUpdate) {
+  _u(shouldShallowCompareProps = false) {
     // avoid new update when props is not changed (shallow comparison)
-    if (shouldShallowCompareProps && this._s(this._op, this.props)) return;
+    if (shouldShallowCompareProps && this._sc(this._op, this.props)) return;
 
     // get html string
     let renderString = this.render(this._h.bind(this));
@@ -56,13 +62,28 @@ export class Nho extends HTMLElement {
     this._e();
 
     // run onUpdate callback if needed
-    callback?.(this._op, this.props);
+    this.onUpdated?.();
+
+    // run effects if needed
+    this._ef.forEach((callback, valueFn) => {
+      // get value before and after update
+      let valueBeforeUpdate = this._ev.get(valueFn);
+      let valueAfterUpdate = valueFn.bind(this)();
+
+      // run effect if value changed
+      if (valueBeforeUpdate !== valueAfterUpdate) {
+        callback.bind(this)(valueBeforeUpdate, valueAfterUpdate);
+      }
+
+      // update new effect value
+      this._ev.set(valueFn, valueAfterUpdate);
+    });
   }
 
   // patching, dom diffing
   _p(current, next, styleNode) {
-    let cNodes = this._m(current.childNodes);
-    let nNodes = this._m(next.childNodes);
+    let cNodes = this._nm(current.childNodes);
+    let nNodes = this._nm(next.childNodes);
     if (styleNode) nNodes.unshift(styleNode);
 
     // compare new nodes and old nodes, if number of old nodes > new nodes, then remove the gap
@@ -90,7 +111,7 @@ export class Nho extends HTMLElement {
       // then update props from new node to current node -> run update fn
       // c._h is a tricky way to check if it's a Nho custom element
       else if (c._h) {
-        c._g(n?.attributes);
+        c._ga(n?.attributes);
         c._u(true);
       }
       // if they have different text contents, then replace current node by new node
@@ -102,7 +123,7 @@ export class Nho extends HTMLElement {
         while (c.attributes.length > 0) c.removeAttribute(c.attributes[0].name);
 
         // add new attributes from new node to current node
-        this._m(n?.attributes).forEach(({ name, value }) => {
+        this._nm(n?.attributes).forEach(({ name, value }) => {
           c.setAttribute(name, value);
         });
       }
@@ -113,16 +134,11 @@ export class Nho extends HTMLElement {
   _h(stringArray, ...valueArray) {
     return stringArray
       .map((s, index, array) => {
-        let currentValue = valueArray[index];
+        let currentValue = valueArray[index] || "";
         let valueString = currentValue;
 
-        // if it's the last index, there is no currentValue, so add "" only
-        if (index === array.length - 1) {
-          valueString = "";
-        }
-
         // if string ends with "=", then it's gonna be a value hereafter
-        else if (s.endsWith("=")) {
+        if (s.endsWith("=")) {
           // if attribute starts with 'p:' or 'on', then cache value
           if (/(p:|on).*$/.test(s)) {
             let key = Math.random().toString(36);
@@ -139,7 +155,7 @@ export class Nho extends HTMLElement {
           else valueString = JSON.stringify(currentValue);
         }
 
-        // if value is array, that should be an array of child components, then join it all to remove ","
+        // if value is array, that should be an array of child components, then join it all
         else if (Array.isArray(currentValue)) {
           valueString = currentValue.join("");
         }
@@ -149,13 +165,13 @@ export class Nho extends HTMLElement {
       .join("");
   }
 
-  // bind events to dom
+  // events to dom
   _e() {
     // traverse through the dom tree
     // check if dom attribute key is an event name (starts with "on")
     // if it's true, then bind cached event handler to that attribute
     this._sr.querySelectorAll("*").forEach((node) => {
-      this._m(node.attributes).forEach(({ name, value }) => {
+      this._nm(node.attributes).forEach(({ name, value }) => {
         if (name.startsWith("on")) {
           node[name] = (e) => Nho._c[value].call(this, e);
         }
@@ -164,6 +180,11 @@ export class Nho extends HTMLElement {
   }
 
   /* API */
+
+  effect(valueFn, callback) {
+    this._ef.set(valueFn, callback);
+    this._ev.set(valueFn, valueFn.bind(this)());
+  }
 
   reactive(state) {
     let time;
@@ -187,12 +208,12 @@ export class Nho extends HTMLElement {
   /* HELPER FUNCTIONS */
 
   // turn NodeMap to array
-  _m(attributes) {
+  _nm(attributes) {
     return [...(attributes || [])];
   }
 
   // get attributes object
-  _g(attributes) {
+  _ga(attributes) {
     // internally cache old props
     this._op = this.props;
 
@@ -203,11 +224,11 @@ export class Nho extends HTMLElement {
     });
 
     // set new props
-    this.props = this._m(attributes).reduce(createAttributeObject, {});
+    this.props = this._nm(attributes).reduce(createAttributeObject, {});
   }
 
   // shallow compare 2 objects
-  _s(obj1, obj2) {
+  _sc(obj1, obj2) {
     // no length comparison or reference comparison since it's redundant
     return Object.keys(obj1).every((key) => obj1[key] === obj2[key]);
   }

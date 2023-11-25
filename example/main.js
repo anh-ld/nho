@@ -124,6 +124,11 @@ class AlbumList extends Nho {
       selectedAlbum: undefined,
       search: "",
     });
+
+    this.effect(
+      () => this.state.search,
+      (oldValue, newValue) => console.log(oldValue, newValue),
+    );
   }
 
   matchedAlbums() {

@@ -5,8 +5,7 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny JavaScript library for easy We
 ### Why Nho?
 
 - Creating Web Components can be tedious if you use vanilla JavaScript. On the other hand, popular frameworks are hefty
-(4KB+) for writing just a small web component. `Nho` keeps it lightweight by stripping advanced APIs
-and implementing a very simple DOM diffing algorithm in behind.
+(4KB+) for writing just a small web component. `Nho` keeps it lightweight by stripping advanced (but unused usually) API sand implementing a very simple DOM diffing algorithm in behind.
 
 ### Features
 
@@ -19,7 +18,7 @@ and implementing a very simple DOM diffing algorithm in behind.
 
 ### Limitations
 
-- `Nho` skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `watch`, etc to stay small.
+- `Nho` skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `memo`, etc to stay small.
 The DOM diffing algorithm is kinda naive (it's fast enough for small project).
 If your components get too complex, consider other options.
 
@@ -77,7 +76,17 @@ class MyCounter extends Nho {
     /* This method run before mount */
     
     /* create component state using "this.reactive". state must be an object */
-    this.state = this.reactive({ count: 1 });      
+    this.state = this.reactive({ count: 1 }); 
+    
+    /* effect */
+    this.effect(
+      // effect value: fn -> value
+      () => this.state.count,
+      // effect callback: fn(old value, new value)
+      (oldValue, newValue) => {
+        console.log(oldValue, newValue)
+      }
+    )
   }
   
   onMounted() {
@@ -85,23 +94,19 @@ class MyCounter extends Nho {
     console.log('Mounted');
   }
   
-  addCount() {
-    /* Update state by redeclare its key-value. Avoid update the whole state. */
-    this.state.count += 1;
-  }
-  
-  onUpdated(oldProps, newProps) {
-    /*
-      This method run after each update.
-      There are 2 params: 'oldProps' and 'newProps'.
-      There is no 'state' params since you can actively take care of its change.
-    */
-    console.log('Props', oldProps, newProps);
+  onUpdated() {
+    /* This method run after each update. */
+    console.log('Updated');
   }
   
   onUnmounted() {
     /* This method run before unmount */
     console.log('Before unmount');
+  }
+
+  addCount() {
+    /* Update state by redeclare its key-value. Avoid update the whole state. */
+    this.state.count += 1;
   }
   
   render(h) {
