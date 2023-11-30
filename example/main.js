@@ -124,6 +124,7 @@ class AlbumList extends Nho {
       selectedAlbum: undefined,
       search: "",
     });
+    this.h1Ref = this.ref();
 
     this.effect(
       () => this.state.search,
@@ -142,6 +143,10 @@ class AlbumList extends Nho {
     const response = await fetch("https://jsonplaceholder.typicode.com/albums");
     this.state.albums = (await response.json()) || [];
     this.state.isFetched = true;
+  }
+
+  onUpdated() {
+    console.log("H1 Ref", this.h1Ref?.current);
   }
 
   async viewAlbum(id) {
@@ -168,7 +173,7 @@ class AlbumList extends Nho {
 
     return h`
       <div>
-        <h1>Albums</h1>
+        <h1 ref=${this.h1Ref}>Albums</h1>
         <input
           placeholder="Search album"
           value=${this.state.search}

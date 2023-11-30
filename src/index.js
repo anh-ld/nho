@@ -61,7 +61,7 @@ export class Nho extends HTMLElement {
     // bind events to dom after patching
     this._e();
 
-    // run onUpdate callback if needed
+    // run onUpdated callback if needed
     this.onUpdated?.();
 
     // run effects if needed
@@ -140,7 +140,7 @@ export class Nho extends HTMLElement {
         // if string ends with "=", then it's gonna be a value hereafter
         if (s.endsWith("=")) {
           // if attribute starts with 'p:' or 'on', then cache value
-          if (/(p:|on).*$/.test(s)) {
+          if (/(p:|on|ref).*$/.test(s)) {
             let key = Math.random().toString(36);
 
             Nho._c[key] =
@@ -175,6 +175,8 @@ export class Nho extends HTMLElement {
         if (name.startsWith("on")) {
           node[name] = (e) => Nho._c[value].call(this, e);
         }
+
+        if (name === "ref") Nho._c[value].current = node;
       });
     });
   }
@@ -186,17 +188,19 @@ export class Nho extends HTMLElement {
     this._ev.set(valueFn, valueFn.bind(this)());
   }
 
-  reactive(state) {
-    let time;
+  ref(initialValue) {
+    return { current: initialValue };
+  }
 
+  reactive(state) {
     return new Proxy(state, {
       set: (target, key, value) => {
         if (!(key in target) || target[key] !== value) {
           target[key] = value;
 
           // batch update after each frame
-          if (time) cancelAnimationFrame(time);
-          time = requestAnimationFrame(() => this._u());
+          if (this._t) cancelAnimationFrame(this._t);
+          this._t = requestAnimationFrame(() => this._u());
         }
 
         return true;

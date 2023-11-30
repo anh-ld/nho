@@ -4,23 +4,20 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny JavaScript library for easy We
 
 ### Why Nho?
 
-- Creating Web Components can be tedious if you use vanilla JavaScript. On the other hand, popular frameworks are hefty
-(4KB+) for writing just a small web component. `Nho` keeps it lightweight by stripping advanced (but unused usually) API sand implementing a very simple DOM diffing algorithm in behind.
+- Writing a Web Component (WC) with vanilla JavaScript can be tedious. Alternatively, popular WC libs are overkill and overweighted (4KB+) for writing just a small WC like `a "Buy now" button` or `a cart listing`. `Nho` simplifies by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm.
 
 ### Features
 
-- 1.2KB gzipped.
+- 1.3KB gzipped.
 - Simple API, inspired from `Vue`.
 
 
 ### Example
-- [album list](https://nho-example.netlify.app/) - [source](./example)
+- [Album list](https://nho-example.netlify.app/) - [source](./example)
 
 ### Limitations
 
-- `Nho` skips advanced features (that popular frameworks do have) like `key`, `Fragments`, `memo`, etc to stay small.
-The DOM diffing algorithm is kinda naive (it's fast enough for small project).
-If your components get too complex, consider other options.
+- In order to stay small, `Nho` skips advanced features (that popular front-end frameworks do have) like `key`, `Fragments`, `memo`. The DOM diffing algorithm is kinda naive (it's fast enough for small project though). If your components get too complex, consider other options.
 
 ### Installation
 
@@ -76,7 +73,10 @@ class MyCounter extends Nho {
     /* This method run before mount */
     
     /* create component state using "this.reactive". state must be an object */
-    this.state = this.reactive({ count: 1 }); 
+    this.state = this.reactive({ count: 1 });
+ 
+    /* only use ref for storing DOM reference */
+    this.pRef = this.ref();
     
     /* effect */
     this.effect(
@@ -97,6 +97,9 @@ class MyCounter extends Nho {
   onUpdated() {
     /* This method run after each update. */
     console.log('Updated');
+
+    /* P Ref */
+    console.log('P Ref', this.pRef?.current);
   }
   
   onUnmounted() {
@@ -120,7 +123,7 @@ class MyCounter extends Nho {
      */
     return h`
       <div class="box">
-        <p>Name: ${this.state.count}</p>
+        <p ref=${this.pRef}>Name: ${this.state.count}</p>
         <button onclick=${this.addCount}>Add count</button>
         <my-counter-child p:count=${this.state.count + 5}></my-counter-child>
       </div>
