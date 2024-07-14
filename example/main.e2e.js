@@ -12,9 +12,7 @@ test("has correct labels", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("h1")).toHaveText(/Albums/);
 
-  const inputPlaceholderText = await page
-    .locator("input")
-    .getAttribute("placeholder");
+  const inputPlaceholderText = await page.locator("input").getAttribute("placeholder");
   await expect(inputPlaceholderText).toBe("Search album");
 });
 
@@ -40,7 +38,5 @@ test("searches albums", async ({ page }) => {
   await page.locator("input").fill("omnis");
   await delay(1000);
 
-  await expect(page.locator(".album-item").first().locator("div")).toHaveText(
-    "omnis laborum odio",
-  );
+  await expect(page.locator(".album-item").first().locator("div")).toHaveText("omnis laborum odio");
 });

@@ -7,11 +7,11 @@ Nho.style = `
     padding: 0;
     font-family: system-ui, sans-serif;
   }
-  
+
   h1 {
     margin-bottom: 20px;
   }
-  
+
   input {
     width: 100%;
     margin-bottom: 20px;
@@ -20,13 +20,13 @@ Nho.style = `
     padding: 8px;
     border: 1px solid black;
   }
-  
+
   button {
     cursor: pointer;
     border: none;
     padding: 8px;
   }
-  
+
   .selected {
     position: fixed;
     top: 0;
@@ -38,45 +38,53 @@ Nho.style = `
     overflow: auto;
     padding: 16px;
   }
-  
+
   .selected-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
   }
-  
+
   .selected-close {
     background: black;
     color: white;
   }
-  
+
   .selected .images, .albums {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .selected .image-item {
     display: flex;
     gap: 16px;
     align-items: center;
   }
-  
-  .selected .image-item img {
+
+  .selected .image-item div:first-child {
     height: 48px;
     width: 48px;
-  } 
-  
+    min-height: 48px;
+    min-width: 48px;
+    border: 1px dotted grey;
+  }
+
   .album-item {
     display: flex;
     gap: 16px;
     align-items: center;
   }
-  
+
   .album-item button {
     background: PaleTurquoise;
     color: blue;
+    flex-shrink: 0;
+  }
+
+  .album-item dev {
+    flex: 1;
   }
 `;
 
@@ -93,7 +101,7 @@ class SelectedAlbum extends Nho {
             ${this.props.album.map(
               (img) => h`
               <div class="image-item">
-                <img src=${img.thumbnailUrl} />
+                <div style="background: #${img.thumbnailUrl.split("/").slice(-1)[0]}"></div>
                 <div>${img.title}</div>
               </div>
             `,
@@ -134,9 +142,7 @@ class AlbumList extends Nho {
 
   matchedAlbums() {
     if (!this.state.search) return this.state.albums;
-    return this.state.albums.filter((v) =>
-      v.title.toLowerCase().includes(this.state.search.toLowerCase()),
-    );
+    return this.state.albums.filter((v) => v.title.toLowerCase().includes(this.state.search.toLowerCase()));
   }
 
   async onMounted() {
@@ -150,9 +156,7 @@ class AlbumList extends Nho {
   }
 
   async viewAlbum(id) {
-    const response = await fetch(
-      `https://jsonplaceholder.typicode.com/albums/${id}/photos`,
-    );
+    const response = await fetch(`https://jsonplaceholder.typicode.com/albums/${id}/photos`);
     this.state.selectedAlbum = (await response.json()) || [];
     document.body.style.overflow = "hidden";
   }
@@ -167,8 +171,7 @@ class AlbumList extends Nho {
   }
 
   render(h) {
-    if (!this.state.isFetched)
-      return h`<div class="loading">fetching albums...</div>`;
+    if (!this.state.isFetched) return h`<div class="loading">fetching albums...</div>`;
     if (!this.state.albums.length) return h`<div>no albums found</div>`;
 
     return h`
@@ -181,9 +184,7 @@ class AlbumList extends Nho {
         />
         <div class="albums">
           ${this.matchedAlbums().map(
-            (album) =>
-              h`<album-item p:title=${album.title} p:view=${() =>
-                this.viewAlbum(album.id)}></album-item>`,
+            (album) => h`<album-item p:title=${album.title} p:view=${() => this.viewAlbum(album.id)}></album-item>`,
           )}
         </div>
         ${
