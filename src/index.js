@@ -4,35 +4,41 @@ export class Nho extends HTMLElement {
   constructor() {
     super();
 
-    // old props
+    /* old props */
     this._op = {};
 
-    // current props
+    /* current props */
     this.props = {};
 
-    // effect fns, e.g: () => this.state.count
+    /*
+      key: effect function, value: effect callback
+      e.g: () => this.state.count : (oldValue, newValue) => console.log(oldValue, newValue)
+    */
     this._ef = new Map();
 
-    // effect values, e.g: ;(() => this.state.count)()
+    /*
+      key: effect function, value: effect function value
+      e.g: () => this.state.count : 100
+    */
     this._ev = new Map();
 
     this.attachShadow({ mode: "open" });
   }
 
   connectedCallback() {
-    // shadow root alias
+    /* shadow root alias */
     this._sr = this.shadowRoot;
 
-    // set host attributes to be props
+    /* set host attributes to be props */
     this._ga(this._sr.host.attributes);
 
-    // run setup before mounting
+    /* run setup before mounting */
     this.setup?.();
 
-    // update without callback fn
+    /* update without callback fn */
     this._u();
 
-    // run onMounted callback if needed
+    /* run onMounted callback if needed */
     this.onMounted?.();
   }
 
@@ -42,87 +48,91 @@ export class Nho extends HTMLElement {
 
   /* INTERNAL FUNCTIONS */
 
-  // update
+  /* update */
   _u(shouldShallowCompareProps = false) {
-    // avoid new update when props is not changed (shallow comparison)
+    /* avoid new update when props is not changed (shallow comparison) */
     if (shouldShallowCompareProps && this._sc(this._op, this.props)) return;
 
-    // get html string
+    /* get html string */
     let renderString = this.render(this._h.bind(this));
     let { body } = new DOMParser().parseFromString(renderString, "text/html");
 
-    // create style element
+    /* create style element */
     let styleElement = document.createElement("style");
     styleElement.innerHTML = Nho.style;
 
-    // run patch
+    /* run patch */
     this._p(this._sr, body, styleElement);
 
-    // bind events to dom after patching
+    /* bind events to dom after patching */
     this._e();
 
-    // run onUpdated callback if needed
+    /* run onUpdated callback if needed */
     this.onUpdated?.();
 
-    // run effects if needed
+    /* run effects if needed */
     this._ef.forEach((callback, valueFn) => {
-      // get value before and after update
+      /* get value before and after update */
       let valueBeforeUpdate = this._ev.get(valueFn);
       let valueAfterUpdate = valueFn.bind(this)();
 
-      // run effect if value changed
+      /* run effect if value changed */
       if (valueBeforeUpdate !== valueAfterUpdate) {
         callback.bind(this)(valueBeforeUpdate, valueAfterUpdate);
       }
 
-      // update new effect value
+      /* update new effect value */
       this._ev.set(valueFn, valueAfterUpdate);
     });
   }
 
-  // patching, dom diffing
+  /* patching, dom diffing */
   _p(current, next, styleNode) {
     let cNodes = this._nm(current.childNodes);
     let nNodes = this._nm(next.childNodes);
     if (styleNode) nNodes.unshift(styleNode);
 
-    // compare new nodes and old nodes, if number of old nodes > new nodes, then remove the gap
+    /* compare new nodes and old nodes, if number of old nodes > new nodes, then remove the gap */
     let gap = cNodes.length - nNodes.length;
     if (gap > 0) for (; gap > 0; gap--) current.removeChild(current.lastChild);
 
-    // loop through each new node, compare with it's correlative current node
+    /* loop through each new node, compare with it's correlative current node */
     nNodes.forEach((_, i) => {
       let c = cNodes[i];
       let n = nNodes[i];
 
-      // cloned new node
+      /* cloned new node */
       let clonedNewNode = n.cloneNode(true);
 
-      // fn to replace old node by new node
+      /* function to replace old node by new node */
       let replace = () => c.parentNode.replaceChild(clonedNewNode, c);
 
-      // if there's no current node, then append new node
+      /* if there's no current node, then append new node */
       if (!c) current.appendChild(clonedNewNode);
-      // if they have different tags, then replace current node by new node
-      else if (c.tagName !== n.tagName) replace();
-      // if new node has its children, then recursively patch them
-      else if (n.childNodes.length) this._p(c, n);
-      // if both current and new nodes are custom elements
-      // then update props from new node to current node -> run update fn
-      // c._h is a tricky way to check if it's a Nho custom element
-      else if (c._h) {
+      /* if they have different tags, then replace current node by new node */ else if (
+        c.tagName !== n.tagName
+      )
+        replace();
+      /* if new node has its children, then recursively patch them */ else if (
+        n.childNodes.length
+      )
+        this._p(c, n);
+      /*
+        if both current and new nodes are custom elements
+        then update props from new node to current node -> run update fn
+        c._h is a tricky way to check if it's a Nho custom element
+      */ else if (c._h) {
         c._ga(n?.attributes);
         c._u(true);
-      }
-      // if they have different text contents, then replace current node by new node
-      else if (c.textContent !== n.textContent) replace();
+      } else if (c.textContent !== n.textContent) replace();
+      /* if they have different text contents, then replace current node by new node */
 
-      // update attributes of current node
+      /* update attributes of current node */
       if (c?.attributes) {
-        // remove all attributes of current node
+        /* remove all attributes of current node */
         while (c.attributes.length > 0) c.removeAttribute(c.attributes[0].name);
 
-        // add new attributes from new node to current node
+        /* add new attributes from new node to current node */
         this._nm(n?.attributes).forEach(({ name, value }) => {
           c.setAttribute(name, value);
         });
@@ -130,16 +140,16 @@ export class Nho extends HTMLElement {
     });
   }
 
-  // hyper script, render html string
+  /* hyper script, render html string */
   _h(stringArray, ...valueArray) {
     return stringArray
       .map((s, index, array) => {
         let currentValue = valueArray[index] || "";
         let valueString = currentValue;
 
-        // if string ends with "=", then it's gonna be a value hereafter
+        /* if string ends with "=", then it's gonna be a value hereafter */
         if (s.endsWith("=")) {
-          // if attribute starts with 'p:' or 'on', then cache value
+          /* if attribute starts with 'p:' or 'on', then cache value */
           if (/(p:|on|ref).*$/.test(s)) {
             let key = Math.random().toString(36);
 
@@ -149,14 +159,11 @@ export class Nho extends HTMLElement {
                 : currentValue;
 
             valueString = key;
-          }
+          } else valueString = JSON.stringify(currentValue);
 
-          // else, then stringify
-          else valueString = JSON.stringify(currentValue);
-        }
-
-        // if value is array, that should be an array of child components, then join it all
-        else if (Array.isArray(currentValue)) {
+          /* else, then stringify */
+        } else if (Array.isArray(currentValue)) {
+          /* if value is array, that should be an array of child components, then join it all */
           valueString = currentValue.join("");
         }
 
@@ -165,11 +172,13 @@ export class Nho extends HTMLElement {
       .join("");
   }
 
-  // events to dom
+  /* events to dom */
   _e() {
-    // traverse through the dom tree
-    // check if dom attribute key is an event name (starts with "on")
-    // if it's true, then bind cached event handler to that attribute
+    /*
+      traverse through the dom tree
+      check if dom attribute key is an event name (starts with "on")
+      if it's true, then bind cached event handler to that attribute
+    */
     this._sr.querySelectorAll("*").forEach((node) => {
       this._nm(node.attributes).forEach(({ name, value }) => {
         if (name.startsWith("on")) {
@@ -198,7 +207,7 @@ export class Nho extends HTMLElement {
         if (!(key in target) || target[key] !== value) {
           target[key] = value;
 
-          // batch update after each frame
+          /* batch update after each frame */
           if (this._t) cancelAnimationFrame(this._t);
           this._t = requestAnimationFrame(() => this._u());
         }
@@ -211,14 +220,14 @@ export class Nho extends HTMLElement {
 
   /* HELPER FUNCTIONS */
 
-  // turn NodeMap to array
+  /* turn NodeMap to array */
   _nm(attributes) {
     return [...(attributes || [])];
   }
 
-  // get attributes object
+  /* get attributes object */
   _ga(attributes) {
-    // internally cache old props
+    /* internally cache old props */
     this._op = this.props;
 
     let createAttributeObject = (acc, { nodeName, nodeValue }) => ({
@@ -227,24 +236,24 @@ export class Nho extends HTMLElement {
         Nho._c[nodeValue],
     });
 
-    // set new props
+    /* set new props */
     this.props = this._nm(attributes).reduce(createAttributeObject, {});
   }
 
-  // shallow compare 2 objects
+  /* shallow compare 2 objects */
   _sc(obj1, obj2) {
-    // no length comparison or reference comparison since it's redundant
+    /* no length comparison or reference comparison since it's redundant */
     return Object.keys(obj1).every((key) => obj1[key] === obj2[key]);
   }
 
   /* STATIC */
 
-  // style
+  /* style */
   static style = "";
 
-  // cache
+  /* cache */
   static _c = {};
 }
 
-// FOR DEVELOPMENT PURPOSES ONLY
+/* FOR DEVELOPMENT PURPOSES ONLY */
 if (import.meta.env.DEV) window.Nho = Nho;

@@ -1,27 +1,29 @@
 ## 📌 Nho
 
-Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny JavaScript library for easy Web Component development.
+Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for easy Web Component development.
 
 ### Why Nho?
 
-- Writing a Web Component (WC) with vanilla JavaScript can be tedious. Alternatively, popular WC libs are overkill and overweighted (4KB+) for writing just a small WC like `a "Buy now" button` or `a cart listing`. `Nho` simplifies by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm.
+- Writing a Web Component (WC) using vanilla JavaScript can be such tedious. Alternatively, popular WC libraries can be overkill and overweighted (4KB+) for creating small components like a `"Buy now" button` or a `cart listing`.
+
+- `Nho` simplifies the process by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm.
 
 ### Features
 
-- 1.3KB gzipped.
-- Simple API, inspired from `Vue`.
+- `1.3KB` gzipped.
+- Simple API inspired from `Vue`.
 
 
 ### Example
-- [Album list](https://nho-example.netlify.app/) - [source](./example)
+- [album list](https://nho-example.netlify.app/) - [source](./example)
 
-### Limitations
+### Limitation
 
-- In order to stay small, `Nho` skips advanced features (that popular front-end frameworks do have) like `key`, `Fragments`, `memo`. The DOM diffing algorithm is kinda naive (it's fast enough for small project though). If your components get too complex, consider other options.
+- In order to stay small, `Nho` skips few advanced features found in popular front-end frameworks like `key`, `Fragments`, `memo`. The DOM diffing algorithm is somewhat basic, but it is fast enough for small projects. If your components become too complex, consider other options.
 
 ### Installation
 
-#### npm
+#### using `npm`
 First, run
 
 ```
@@ -35,13 +37,13 @@ class MyCounterChild extends Nho {}
 ```
 
 
-#### CDN
+#### using `CDN`
 First, add `script` to the `html` file
 ```html
 <script src="https://unpkg.com/nho"></script>
 ```
 
-then
+then, add `script` to the `html` file
 
 ```html
 <script>
@@ -53,7 +55,9 @@ then
 ### Usage
 
 ```js
-/* Declare global styles. Styles will be injected to all Nho Elements */
+/* main.js */
+
+/* declare global style. Styles will be injected to all Nho Elements */
 Nho.style = `
   .box {
     background: blue;
@@ -63,21 +67,21 @@ Nho.style = `
 
 class MyCounterChild extends Nho {
   render(h) {
-    /* Bind value from props */
+    /* bind value from props */
     return h`<div>Child: ${this.props.count}</div>`
   }
 }
 
 class MyCounter extends Nho {
   setup() {
-    /* This method run before mount */
-    
-    /* create component state using "this.reactive". state must be an object */
+    /* this method runs before mount */
+
+    /* create component state using "this.reactive", state must be an object */
     this.state = this.reactive({ count: 1 });
- 
+
     /* only use ref for storing DOM reference */
     this.pRef = this.ref();
-    
+
     /* effect */
     this.effect(
       // effect value: fn -> value
@@ -88,35 +92,35 @@ class MyCounter extends Nho {
       }
     )
   }
-  
+
   onMounted() {
-    /* This method run after mount */
+    /* this method runs after mount */
     console.log('Mounted');
   }
-  
+
   onUpdated() {
-    /* This method run after each update. */
+    /* this method runs after each update. */
     console.log('Updated');
 
-    /* P Ref */
+    /* P tag ref */
     console.log('P Ref', this.pRef?.current);
   }
-  
+
   onUnmounted() {
-    /* This method run before unmount */
+    /* this method runs before unmount */
     console.log('Before unmount');
   }
 
   addCount() {
-    /* Update state by redeclare its key-value. Avoid update the whole state. */
+    /* update state by redeclaring its key-value. Avoid updating the whole state. */
     this.state.count += 1;
   }
-  
+
   render(h) {
-    /* This method is used to render */
-    
+    /* this method is used to render */
+
     /*
-      SAME AS MODERN FRONT FRAMEWORKS
+      JSX template alike
       - Must have only 1 root element
       - Bind state / event using value in literal string
       - Pass state to child element using props with 'p:' prefix
@@ -136,7 +140,26 @@ customElements.define("my-counter-child", MyCounterChild);
 ```
 
 ```html
+/* index.html */
 <my-counter></my-counter>
+```
+
+### Notice
+- **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties.
+
+Element properties
+
+```
+_op, _ef, _ev, _sr, _ga, _nm, _sc, _p, _u, _h, _e, _t
+```
+
+```
+setup, onMounted, onUnmounted, onUpdated, effect, ref, reactive, render
+```
+
+Class properties
+```
+_c, style
 ```
 
 ### How it works
@@ -144,3 +167,7 @@ customElements.define("my-counter-child", MyCounterChild);
 - It's better to dive into the code, but here is a quick sketch about how `Nho` works.
 
 ![How Nho works](./hiw.webp)
+
+### Mentions
+
+- [Frontend Focus's #651 issue](https://frontendfoc.us/issues/651)
