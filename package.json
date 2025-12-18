@@ -1,6 +1,6 @@
 {
   "name": "nho",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "1KB Web Component Abstraction",
   "keywords": ["nho", "web component"],
   "repository": {
@@ -23,34 +23,34 @@
   "main": "./dist/index.umd.js",
   "files": ["dist", "src", "*.md"],
   "scripts": {
-    "----------BUILD----------": "",
-    "build": "vite build --mode=lib",
-    "build:example": "vite build --mode=example",
-    "----------UNIT-TEST----------": "",
-    "coverage": "vitest --coverage",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "----------DEV----------": "",
-    "dev": "vite",
-    "----------OTHERS----------": "",
-    "postinstall": "simple-git-hooks",
-    "release": "release-it",
-    "check": "npx @biomejs/biome check --write .",
+    "build": "bun run build:module && bun run build:umd",
+    "build:module": "bun build src/index.js --target=browser --format=esm --outdir=dist --entry-naming=index.es.js --minify",
+    "build:umd": "bun build src/index.js --target=browser --format=iife --outdir=dist --entry-naming=index.umd.js --minify",
+    "build:example": "bun build example/main.js --target=browser --format=esm --outdir=example/dist --entry-naming=main.js --sourcemap",
+    "coverage": "bun test --coverage",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "dev": "bun run build:example --watch",
+    "serve": "bunx serve example",
+    "postinstall": "bunx simple-git-hooks",
+    "release": "bunx release-it",
+    "check": "bunx @biomejs/biome check --write .",
     "clean": "rm -rf dist example/dist"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run test && npm run check && git add ."
+    "pre-commit": "bun test && bun run check && git add ."
+  },
+  "npmConfig": {
+    "save-exact": true
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/user-event": "14.5.2",
-    "@vitest/coverage-v8": "0.34.6",
     "jsdom": "22.1.0",
     "release-it": "16.3.0",
-    "simple-git-hooks": "2.11.1",
-    "vite": "4.5.3",
-    "vitest": "0.34.6"
+    "serve": "14.2.5",
+    "simple-git-hooks": "2.11.1"
   },
   "release-it": {
     "git": {

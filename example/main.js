@@ -1,4 +1,4 @@
-import { Nho } from "@";
+import { Nho } from "../src/index.js";
 
 Nho.style = `
   * {

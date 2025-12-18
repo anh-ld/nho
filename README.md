@@ -30,6 +30,8 @@ First, run
 npm install nho
 ```
 
+> The package is published on `npm`, so other package managers (e.g. `yarn`, `pnpm`, `bun`) still work.
+
 then
 ```js
 import { Nho } from 'nho';
@@ -143,6 +145,13 @@ customElements.define("my-counter-child", MyCounterChild);
 /* index.html */
 <my-counter></my-counter>
 ```
+
+### Development (Bun)
+- Install dependencies: `bun install`
+- Build the library bundles: `bun run build`
+- Build/watch the example app: `bun run dev` (outputs to `example/dist`, open `example/index.html`)
+- Serve the example folder: `bun run serve` (default http://localhost:3000)
+- Run tests: `bun test`
 
 ### Notice
 - **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties.

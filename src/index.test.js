@@ -1,6 +1,25 @@
-import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Nho } from "./";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import * as matchers from "@testing-library/jest-dom/matchers";
+import { JSDOM } from "jsdom";
+
+// Build a browser-like global environment for Bun/jsdom so the custom element code can run.
+const { window } = new JSDOM("<!doctype html><html><body></body></html>", {
+  url: "http://localhost",
+});
+
+globalThis.window = window;
+globalThis.document = window.document;
+globalThis.HTMLElement = window.HTMLElement;
+globalThis.customElements = window.customElements;
+globalThis.Node = window.Node;
+globalThis.navigator = window.navigator;
+globalThis.requestAnimationFrame =
+  window.requestAnimationFrame || ((callback) => setTimeout(() => callback(Date.now()), 16));
+globalThis.cancelAnimationFrame = window.cancelAnimationFrame || ((id) => clearTimeout(id));
+
+expect.extend(matchers);
+
+const { Nho } = await import("./index.js");
 
 const tick = () => new Promise((r) => setTimeout(r, 100));
 
@@ -92,7 +111,7 @@ describe("test the library", () => {
     button.click();
     await tick();
 
-    let newChild = getChild();
+    const newChild = getChild();
     expect(newChild.length).toBe(2);
 
     expect(newChild[0].shadowRoot).toHaveTextContent("1");

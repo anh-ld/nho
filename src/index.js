@@ -58,10 +58,10 @@ export class Nho extends HTMLElement {
 
     /* get html fragment */
     this._tp.innerHTML = this.render(this._hb);
-    let body = this._tp.content;
+    const body = this._tp.content;
 
     /* reuse style node when possible */
-    let styleElement = document.createElement("style");
+    const styleElement = document.createElement("style");
     styleElement.innerHTML = Nho.style;
 
     /* run patch */
@@ -76,8 +76,8 @@ export class Nho extends HTMLElement {
     /* run effects if needed */
     this._ef.forEach((callback, valueFn) => {
       /* get value before and after update */
-      let valueBeforeUpdate = this._ev.get(valueFn);
-      let valueAfterUpdate = valueFn.call(this);
+      const valueBeforeUpdate = this._ev.get(valueFn);
+      const valueAfterUpdate = valueFn.call(this);
 
       /* run effect if value changed */
       if (valueBeforeUpdate !== valueAfterUpdate) callback.call(this, valueBeforeUpdate, valueAfterUpdate);
@@ -89,8 +89,8 @@ export class Nho extends HTMLElement {
 
   /* patching, dom diffing */
   _p(current, next, styleNode) {
-    let cNodes = this._nm(current.childNodes);
-    let nNodes = this._nm(next.childNodes);
+    const cNodes = this._nm(current.childNodes);
+    const nNodes = this._nm(next.childNodes);
     if (styleNode) nNodes.unshift(styleNode);
 
     /* compare new nodes and old nodes, if number of old nodes > new nodes, then remove the gap */
@@ -99,14 +99,14 @@ export class Nho extends HTMLElement {
 
     /* loop through each new node, compare with it's correlative current node */
     nNodes.forEach((_, i) => {
-      let c = cNodes[i];
-      let n = nNodes[i];
+      const c = cNodes[i];
+      const n = nNodes[i];
 
       /* function to clone new node */
-      let clone = () => n.cloneNode(true);
+      const clone = () => n.cloneNode(true);
 
       /* function to replace old node by new node */
-      let replace = () => current.replaceChild(clone(), c);
+      const replace = () => current.replaceChild(clone(), c);
 
       // if there's no current node, then append new node
       if (!c) current.appendChild(clone());
@@ -141,7 +141,7 @@ export class Nho extends HTMLElement {
   _h(stringArray, ...valueArray) {
     return stringArray
       .map((s, index) => {
-        let currentValue = valueArray[index] || "";
+        const currentValue = valueArray[index] || "";
         let valueString = currentValue;
 
         // if string ends with "=", then it's gonna be a value hereafter
@@ -169,7 +169,7 @@ export class Nho extends HTMLElement {
     */
     this._sr.querySelectorAll("*").forEach((node) => {
       this._nm(node.attributes).forEach(({ name, value }) => {
-        let idx = +value;
+        const idx = +value;
         if (name.startsWith("on")) node[name] = (e) => Nho._c[idx]?.call(this, e);
 
         if (name === "ref") Nho._c[idx].current = node;
@@ -217,7 +217,7 @@ export class Nho extends HTMLElement {
     /* internally cache old props */
     this._op = this.props;
 
-    let props = {};
+    const props = {};
     this._nm(attributes).forEach(({ nodeName, nodeValue }) => {
       props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c[+nodeValue];
     });
@@ -226,8 +226,8 @@ export class Nho extends HTMLElement {
 
   /* shallow compare 2 objects */
   _sc(obj1, obj2) {
-    let keys1 = Object.keys(obj1);
-    let keys2 = Object.keys(obj2);
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
 
     return keys1.length !== keys2.length ? false : keys1.every((key) => obj1[key] === obj2[key]);
   }
@@ -240,5 +240,7 @@ export class Nho extends HTMLElement {
   static _c = [];
 }
 
-/* FOR DEVELOPMENT PURPOSES ONLY */
-if (import.meta.env.DEV) window.Nho = Nho;
+if (typeof globalThis !== "undefined") {
+  globalThis.nho = globalThis.nho || {};
+  globalThis.nho.Nho = Nho;
+}
