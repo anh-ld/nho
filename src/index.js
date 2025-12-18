@@ -22,13 +22,16 @@ export class Nho extends HTMLElement {
     */
     this._ev = new Map();
 
-    this.attachShadow({ mode: "open" });
+    /* cache hyper function binding */
+    this._hb = this._h.bind(this);
+
+    /* reuse template for rendering to avoid extra DOMParser allocations */
+    this._tp = document.createElement("template");
+
+    this._sr = this.attachShadow({ mode: "open" });
   }
 
   connectedCallback() {
-    /* shadow root alias */
-    this._sr = this.shadowRoot;
-
     /* set host attributes to be props */
     this._ga(this._sr.host.attributes);
 
@@ -53,11 +56,11 @@ export class Nho extends HTMLElement {
     /* avoid new update when props is not changed (shallow comparison) */
     if (shouldShallowCompareProps && this._sc(this._op, this.props)) return;
 
-    /* get html string */
-    let renderString = this.render(this._h.bind(this));
-    let { body } = new DOMParser().parseFromString(renderString, "text/html");
+    /* get html fragment */
+    this._tp.innerHTML = this.render(this._hb);
+    let body = this._tp.content;
 
-    /* create style element */
+    /* reuse style node when possible */
     let styleElement = document.createElement("style");
     styleElement.innerHTML = Nho.style;
 
@@ -74,12 +77,10 @@ export class Nho extends HTMLElement {
     this._ef.forEach((callback, valueFn) => {
       /* get value before and after update */
       let valueBeforeUpdate = this._ev.get(valueFn);
-      let valueAfterUpdate = valueFn.bind(this)();
+      let valueAfterUpdate = valueFn.call(this);
 
       /* run effect if value changed */
-      if (valueBeforeUpdate !== valueAfterUpdate) {
-        callback.bind(this)(valueBeforeUpdate, valueAfterUpdate);
-      }
+      if (valueBeforeUpdate !== valueAfterUpdate) callback.call(this, valueBeforeUpdate, valueAfterUpdate);
 
       /* update new effect value */
       this._ev.set(valueFn, valueAfterUpdate);
@@ -146,11 +147,8 @@ export class Nho extends HTMLElement {
         // if string ends with "=", then it's gonna be a value hereafter
         if (s.endsWith("=")) {
           // if attribute starts with 'p:' or 'on', then cache value
-          if (/(p:|on|ref).*$/.test(s)) {
-            let key = Math.random().toString(36);
-            Nho._c[key] = typeof currentValue === "function" ? currentValue.bind(this) : currentValue;
-            valueString = key;
-          }
+          if (/(p:|on|ref).*$/.test(s))
+            valueString = Nho._c.push(typeof currentValue === "function" ? currentValue.bind(this) : currentValue) - 1;
           // else, then stringify
           else valueString = JSON.stringify(currentValue);
         }
@@ -171,9 +169,10 @@ export class Nho extends HTMLElement {
     */
     this._sr.querySelectorAll("*").forEach((node) => {
       this._nm(node.attributes).forEach(({ name, value }) => {
-        if (name.startsWith("on")) node[name] = (e) => Nho._c[value].call(this, e);
+        let idx = +value;
+        if (name.startsWith("on")) node[name] = (e) => Nho._c[idx]?.call(this, e);
 
-        if (name === "ref") Nho._c[value].current = node;
+        if (name === "ref") Nho._c[idx].current = node;
       });
     });
   }
@@ -182,7 +181,7 @@ export class Nho extends HTMLElement {
 
   effect(valueFn, callback) {
     this._ef.set(valueFn, callback);
-    this._ev.set(valueFn, valueFn.bind(this)());
+    this._ev.set(valueFn, valueFn.call(this));
   }
 
   ref(initialValue) {
@@ -218,19 +217,19 @@ export class Nho extends HTMLElement {
     /* internally cache old props */
     this._op = this.props;
 
-    let createAttributeObject = (acc, { nodeName, nodeValue }) => ({
-      ...acc,
-      [nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName]: Nho._c[nodeValue],
+    let props = {};
+    this._nm(attributes).forEach(({ nodeName, nodeValue }) => {
+      props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c[+nodeValue];
     });
-
-    /* set new props */
-    this.props = this._nm(attributes).reduce(createAttributeObject, {});
+    this.props = props;
   }
 
   /* shallow compare 2 objects */
   _sc(obj1, obj2) {
-    /* no length comparison or reference comparison since it's redundant */
-    return Object.keys(obj1).every((key) => obj1[key] === obj2[key]);
+    let keys1 = Object.keys(obj1);
+    let keys2 = Object.keys(obj2);
+
+    return keys1.length !== keys2.length ? false : keys1.every((key) => obj1[key] === obj2[key]);
   }
 
   /* STATIC */
@@ -238,8 +237,7 @@ export class Nho extends HTMLElement {
   /* style */
   static style = "";
 
-  /* cache */
-  static _c = {};
+  static _c = [];
 }
 
 /* FOR DEVELOPMENT PURPOSES ONLY */

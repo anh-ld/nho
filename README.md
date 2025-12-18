@@ -147,19 +147,13 @@ customElements.define("my-counter-child", MyCounterChild);
 ### Notice
 - **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties.
 
-Element properties
 
 ```
-_op, _ef, _ev, _sr, _ga, _nm, _sc, _p, _u, _h, _e, _t
+setup, onMounted, onUnmounted, onUpdated, effect, ref, reactive, render, style
 ```
 
 ```
-setup, onMounted, onUnmounted, onUpdated, effect, ref, reactive, render
-```
-
-Class properties
-```
-_c, style
+any property that starts with `_`
 ```
 
 ### How it works

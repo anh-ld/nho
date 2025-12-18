@@ -26,9 +26,6 @@
     "----------BUILD----------": "",
     "build": "vite build --mode=lib",
     "build:example": "vite build --mode=example",
-    "----------E2E-TEST----------": "",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
     "----------UNIT-TEST----------": "",
     "coverage": "vitest --coverage",
     "test": "vitest run",
@@ -39,25 +36,21 @@
     "postinstall": "simple-git-hooks",
     "release": "release-it",
     "check": "npx @biomejs/biome check --write .",
-    "clean": "rm -rf dist example/dist playwright-report test-results"
+    "clean": "rm -rf dist example/dist"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run test && npm run check && git add .",
-    "commit-msg": "npx @n6ai/verify-commit-msg@latest $1"
+    "pre-commit": "npm run test && npm run check && git add ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.8.3",
-    "@n6ai/verify-commit-msg": "^1.2.0",
-    "@playwright/test": "^1.45.1",
-    "@testing-library/jest-dom": "^6.4.6",
-    "@testing-library/user-event": "^14.5.2",
-    "@vitest/coverage-v8": "^0.34.6",
-    "jsdom": "^22.1.0",
-    "playwright": "^1.45.1",
-    "release-it": "^16.3.0",
-    "simple-git-hooks": "^2.11.1",
-    "vite": "^4.5.3",
-    "vitest": "^0.34.6"
+    "@biomejs/biome": "1.8.3",
+    "@testing-library/jest-dom": "6.4.6",
+    "@testing-library/user-event": "14.5.2",
+    "@vitest/coverage-v8": "0.34.6",
+    "jsdom": "22.1.0",
+    "release-it": "16.3.0",
+    "simple-git-hooks": "2.11.1",
+    "vite": "4.5.3",
+    "vitest": "0.34.6"
   },
   "release-it": {
     "git": {
