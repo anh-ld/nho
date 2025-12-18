@@ -93,7 +93,7 @@ export class Nho extends HTMLElement {
     const nNodes = this._nm(next.childNodes);
     if (styleNode) nNodes.unshift(styleNode);
 
-    /* compare new nodes and old nodes, if number of old nodes > new nodes, then remove the gap */
+    /* compare new nodes and old (current) nodes, if number of old nodes > new nodes, then remove the gap */
     let gap = cNodes.length - nNodes.length;
     if (gap > 0) for (; gap > 0; gap--) current.removeChild(current.lastChild);
 
@@ -169,10 +169,10 @@ export class Nho extends HTMLElement {
     */
     this._sr.querySelectorAll("*").forEach((node) => {
       this._nm(node.attributes).forEach(({ name, value }) => {
-        const idx = +value;
-        if (name.startsWith("on")) node[name] = (e) => Nho._c[idx]?.call(this, e);
+        const index = +value;
 
-        if (name === "ref") Nho._c[idx].current = node;
+        if (name.startsWith("on")) node[name] = (e) => Nho._c[index]?.call(this, e);
+        if (name === "ref") Nho._c[index].current = node;
       });
     });
   }
@@ -221,6 +221,7 @@ export class Nho extends HTMLElement {
     this._nm(attributes).forEach(({ nodeName, nodeValue }) => {
       props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c[+nodeValue];
     });
+
     this.props = props;
   }
 

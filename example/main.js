@@ -9,7 +9,7 @@ Nho.style = `
   }
 
   h1 {
-    margin-bottom: 20px;
+    margin-bottom: 0px;
   }
 
   input {
@@ -27,13 +27,21 @@ Nho.style = `
     padding: 8px;
   }
 
+  .loading {
+    color: gray;
+  }
+
+  .search-container h1 {
+    margin-bottom: 20px;
+  }
+
   .selected {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: PaleTurquoise;
+    background: springgreen;
     align-items: center;
     overflow: auto;
     padding: 16px;
@@ -42,7 +50,7 @@ Nho.style = `
   .selected-title {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: start;
     margin-bottom: 20px;
   }
 
@@ -55,6 +63,8 @@ Nho.style = `
     display: flex;
     flex-direction: column;
     gap: 16px;
+    height: calc(100vh - 150px);
+    overflow: auto;
   }
 
   .selected .image-item {
@@ -78,9 +88,16 @@ Nho.style = `
   }
 
   .album-item button {
-    background: PaleTurquoise;
+    background: springgreen;
     color: blue;
     flex-shrink: 0;
+    min-width: 140px;
+    transition: opacity 0.2s ease;
+  }
+
+  .album-item button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .album-item dev {
@@ -115,9 +132,12 @@ class SelectedAlbum extends Nho {
 
 class AlbumItem extends Nho {
   render(h) {
+    const { loading } = this.props;
     return h`
       <div class="album-item">
-        <button onclick=${this.props.view}>View album images</button>
+        <button onclick=${this.props.view} ${loading ? "disabled" : ""}>
+          ${loading ? "Loading..." : "View album images"}
+        </button>
         <div>${this.props.title}</div>
       </div>
     `;
@@ -130,6 +150,7 @@ class AlbumList extends Nho {
       albums: [],
       isFetched: false,
       selectedAlbum: undefined,
+      loadingAlbumId: undefined,
       search: "",
     });
     this.h1Ref = this.ref();
@@ -156,13 +177,24 @@ class AlbumList extends Nho {
   }
 
   async viewAlbum(id) {
-    const response = await fetch(`https://jsonplaceholder.typicode.com/albums/${id}/photos`);
-    this.state.selectedAlbum = (await response.json()) || [];
-    document.body.style.overflow = "hidden";
+    this.state.loadingAlbumId = id;
+    this.state.selectedAlbum = undefined;
+
+    try {
+      const response = await fetch(`https://jsonplaceholder.typicode.com/albums/${id}/photos`);
+      this.state.selectedAlbum = (await response.json()) || [];
+      document.body.style.overflow = "hidden";
+    } catch (error) {
+      console.error("Failed to load album", error);
+    } finally {
+      this.state.loadingAlbumId = undefined;
+      if (!this.state.selectedAlbum?.length) document.body.style.overflow = "initial";
+    }
   }
 
   hideAlbum() {
     this.state.selectedAlbum = undefined;
+    this.state.loadingAlbumId = undefined;
     document.body.style.overflow = "initial";
   }
 
@@ -176,15 +208,22 @@ class AlbumList extends Nho {
 
     return h`
       <div>
-        <h1 ref=${this.h1Ref}>Albums</h1>
-        <input
-          placeholder="Search album"
-          value=${this.state.search}
-          oninput=${this.searchValue}
-        />
+        <div class="search-container">
+          <h1 ref=${this.h1Ref}>Albums</h1>
+          <input
+            placeholder="Search album"
+            value=${this.state.search}
+            oninput=${this.searchValue}
+          />
+        </div>
         <div class="albums">
           ${this.matchedAlbums().map(
-            (album) => h`<album-item p:title=${album.title} p:view=${() => this.viewAlbum(album.id)}></album-item>`,
+            (album) =>
+              h`<album-item
+                p:title=${album.title}
+                p:view=${() => this.viewAlbum(album.id)}
+                p:loading=${this.state.loadingAlbumId === album.id}
+              ></album-item>`,
           )}
         </div>
         ${
