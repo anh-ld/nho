@@ -4,14 +4,15 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for easy Web 
 
 ### Why Nho?
 
-- Writing a Web Component (WC) using vanilla JavaScript can be such tedious. Alternatively, popular WC libraries can be overkill and overweighted (4KB+) for creating small components like a `"Buy now" button` or a `cart listing`.
+- Writing a Web Component using vanilla JavaScript can be such tedious. Alternatively, popular libraries can be overkill and overweighted (4KB+) for creating small components like a `"Buy now" button` or a `cart listing drawer`
 
-- `Nho` simplifies the process by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm.
+- `Nho` simplifies the process by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm
 
 ### Features
 
-- `1.3KB` gzipped.
-- Simple API inspired from `Vue`.
+- `1.2KB` gzipped  (`1210 bytes` for `esm` and `1443 bytes` for `umd`)
+- Simple API inspired from `Vue`
+- `100%` test coverage
 
 
 ### Example
@@ -19,7 +20,7 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for easy Web 
 
 ### Limitation
 
-- In order to stay small, `Nho` skips few advanced features found in popular front-end frameworks like `key`, `Fragments`, `memo`. The DOM diffing algorithm is somewhat basic, but it is fast enough for small projects. If your components become too complex, consider other options.
+- In order to stay small, `Nho` skips few advanced features found in popular front-end frameworks like `key`, `Fragments`, `memo`. The DOM diffing algorithm is somewhat basic, but it is fast enough for small projects. If your components become too complex, consider other options
 
 ### Installation
 
@@ -30,7 +31,7 @@ First, run
 npm install nho
 ```
 
-> The package is published on `npm`, so other package managers (e.g. `yarn`, `pnpm`, `bun`) still work.
+> The package is published on `npm`, so other package managers (e.g. `yarn`, `pnpm`, `bun`) still work
 
 then
 ```js
@@ -154,7 +155,7 @@ customElements.define("my-counter-child", MyCounterChild);
 - Run tests: `bun test`
 
 ### Notice
-- **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties.
+- **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties
 
 
 ```
@@ -167,9 +168,33 @@ any property that starts with `_`
 
 ### How it works
 
-- It's better to dive into the code, but here is a quick sketch about how `Nho` works.
+- It's better to dive into the code, but here is a diagram about how `Nho` works
 
-![How Nho works](./hiw.webp)
+```mermaid
+flowchart LR
+  subgraph Main
+    direction LR
+    A[State change] --> B[Proxy set trap]
+    B --> C[Batched via requestAnimationFrame]
+    C --> D[Render template]
+    D --> E[Parse to DOM]
+    E --> F[Diff & patch current DOM]
+    F --> G[Bind props, events, refs]
+    G --> H[Run lifecycle + effects]
+  end
+
+  subgraph Cache[Cache + bind]
+    direction TB
+    N1[/Collect p: props and on* handlers while rendering/]
+    N2[/Attach cached handlers and refs/]
+    N1 --> N2
+  end
+  D -. cache .-> N1
+  N2 -. apply .-> G
+
+  R["Diff steps (order):<br>1. Trim extra children<br>2. Compare each new child by index<br>3. Clone if missing<br>4. Replace if tag/text differs<br>5. Sync attributes in place"]
+  F -. uses .-> R
+```
 
 ### Mentions
 
