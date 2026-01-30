@@ -83,7 +83,10 @@ export class Nho extends HTMLElement {
     });
 
     /* clear cache after outermost render finishes */
-    if (!--Nho._d) Nho._c.length = 0;
+    if (!--Nho._d) {
+      Nho._c.clear();
+      Nho._i = 0;
+    }
   }
 
   /* patching, dom diffing */
@@ -140,7 +143,7 @@ export class Nho extends HTMLElement {
         nextAttrs.forEach(({ name, value }) => {
           if (name.startsWith("on")) {
             let index = +value;
-            c[name] = Nho._c[index] || null;
+            c[name] = Nho._c.get(index) || null;
           } else if (c.getAttribute(name) !== value) c.setAttribute(name, value);
         });
       }
@@ -157,8 +160,11 @@ export class Nho extends HTMLElement {
         // if string ends with "=", then it's gonna be a value hereafter
         if (s[s.length - 1] === "=") {
           // if attribute is prop/event/ref, then cache value
-          if (/\s(p:\S+|on\S+|ref)=$/.test(s))
-            valueString = Nho._c.push(typeof currentValue === "function" ? currentValue.bind(this) : currentValue) - 1;
+          if (/\s(p:\S+|on\S+|ref)=$/.test(s)) {
+            let key = ++Nho._i;
+            Nho._c.set(key, typeof currentValue === "function" ? currentValue.bind(this) : currentValue);
+            valueString = key;
+          }
           // else, then serialize attribute
           else valueString = `"${`${currentValue}`.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)}"`;
         }
@@ -175,7 +181,8 @@ export class Nho extends HTMLElement {
     /* bind refs */
     this._sr.querySelectorAll("[ref]").forEach((node) => {
       let index = +node.getAttribute("ref");
-      if (Nho._c[index]) Nho._c[index].current = node;
+      let ref = Nho._c.get(index);
+      if (ref) ref.current = node;
     });
   }
 
@@ -220,7 +227,7 @@ export class Nho extends HTMLElement {
 
     let props = {};
     this._nm(attributes).forEach(({ nodeName, nodeValue }) => {
-      props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c[+nodeValue];
+      props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c.get(+nodeValue);
     });
 
     this.props = props;
@@ -239,7 +246,10 @@ export class Nho extends HTMLElement {
   static style = "";
 
   /* value cache for props/events/refs */
-  static _c = [];
+  static _c = new Map();
+
+  /* cache id counter for props/events/refs */
+  static _i = 0;
 
   /* render depth for safe cache cleanup */
   static _d = 0;

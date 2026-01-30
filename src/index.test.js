@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, expect, it } from "bun:test";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { JSDOM } from "jsdom";
 
@@ -339,250 +339,248 @@ const mount = (tagName) => {
   return element;
 };
 
-describe("test the library", () => {
-  beforeEach(() => {
-    document.body.innerHTML = "";
-    Nho._c.length = 0;
-    Nho.style = `
+beforeEach(() => {
+  document.body.innerHTML = "";
+  Nho._c.length = 0;
+  Nho.style = `
       p {
         color: red;
       }
     `;
-  });
+});
 
-  afterEach(() => {
-    document.body.innerHTML = "";
-  });
+afterEach(() => {
+  document.body.innerHTML = "";
+});
 
-  it("should render the custom element", () => {
-    const element = mount("parent-element");
-    expect(element).toBeInTheDocument();
-    expect(element.shadowRoot.querySelector("p")).toHaveTextContent("Count: 1");
-    const styleTag = element.shadowRoot.querySelector("style");
-    expect(styleTag).toHaveTextContent("color: red;");
-  });
+it("should render the custom element", () => {
+  const element = mount("parent-element");
+  expect(element).toBeInTheDocument();
+  expect(element.shadowRoot.querySelector("p")).toHaveTextContent("Count: 1");
+  const styleTag = element.shadowRoot.querySelector("style");
+  expect(styleTag).toHaveTextContent("color: red;");
+});
 
-  it("should handle events and batch updates", async () => {
-    const element = mount("parent-element");
-    const content = element.shadowRoot.querySelector("p");
-    const button = element.shadowRoot.querySelector("button");
+it("should handle events and batch updates", async () => {
+  const element = mount("parent-element");
+  const content = element.shadowRoot.querySelector("p");
+  const button = element.shadowRoot.querySelector("button");
 
-    button.click();
-    button.click();
-    await tick();
+  button.click();
+  button.click();
+  await tick();
 
-    expect(content).toHaveTextContent("Count: 3");
-  });
+  expect(content).toHaveTextContent("Count: 3");
+});
 
-  it("should render child elements, sync props and remove stale nodes", async () => {
-    const element = mount("parent-element");
-    const button = element.shadowRoot.querySelector("button");
-    const getChild = () => element.shadowRoot.querySelectorAll("child-element");
+it("should render child elements, sync props and remove stale nodes", async () => {
+  const element = mount("parent-element");
+  const button = element.shadowRoot.querySelector("button");
+  const getChild = () => element.shadowRoot.querySelectorAll("child-element");
 
-    expect(getChild().length).toBe(1);
+  expect(getChild().length).toBe(1);
 
-    button.click();
-    await tick();
-    expect(getChild().length).toBe(2);
-    expect(getChild()[1].shadowRoot).toHaveTextContent("2");
+  button.click();
+  await tick();
+  expect(getChild().length).toBe(2);
+  expect(getChild()[1].shadowRoot).toHaveTextContent("2");
 
-    element.state.count = 0;
-    await tick();
-    expect(getChild().length).toBe(0);
-  });
+  element.state.count = 0;
+  await tick();
+  expect(getChild().length).toBe(0);
+});
 
-  it("should run effects only when tracked values change", async () => {
-    const element = mount("effect-element");
+it("should run effects only when tracked values change", async () => {
+  const element = mount("effect-element");
 
-    expect(element.changes).toEqual([]);
+  expect(element.changes).toEqual([]);
 
-    element.increment();
-    await tick();
-    expect(element.changes).toEqual([[0, 1]]);
+  element.increment();
+  await tick();
+  expect(element.changes).toEqual([[0, 1]]);
 
-    element.state.count = 1;
-    await tick();
-    expect(element.changes).toHaveLength(1);
+  element.state.count = 1;
+  await tick();
+  expect(element.changes).toHaveLength(1);
 
-    element.state.count = 2;
-    await tick();
-    expect(element.changes).toEqual([
-      [0, 1],
-      [1, 2],
-    ]);
-  });
+  element.state.count = 2;
+  await tick();
+  expect(element.changes).toEqual([
+    [0, 1],
+    [1, 2],
+  ]);
+});
 
-  it("should bind refs and keep handler context intact", async () => {
-    const element = mount("ref-element");
-    const button = element.shadowRoot.querySelector("button");
+it("should bind refs and keep handler context intact", async () => {
+  const element = mount("ref-element");
+  const button = element.shadowRoot.querySelector("button");
 
-    expect(element.buttonRef.current).toBe(button);
-    expect(button).toHaveTextContent("Click me");
+  expect(element.buttonRef.current).toBe(button);
+  expect(button).toHaveTextContent("Click me");
 
-    button.click();
-    await tick();
+  button.click();
+  await tick();
 
-    expect(button).toHaveTextContent("Clicked");
-    expect(element.buttonRef.current).toBe(button);
-  });
+  expect(button).toHaveTextContent("Clicked");
+  expect(element.buttonRef.current).toBe(button);
+});
 
-  it("should skip child re-render when props stay the same", async () => {
-    const element = mount("stable-parent");
-    const child = element.shadowRoot.querySelector("stable-child");
-    const initialRenderCount = child.renderCount;
+it("should skip child re-render when props stay the same", async () => {
+  const element = mount("stable-parent");
+  const child = element.shadowRoot.querySelector("stable-child");
+  const initialRenderCount = child.renderCount;
 
-    element.bumpNoise();
-    await tick();
+  element.bumpNoise();
+  await tick();
 
-    expect(child.renderCount).toBe(initialRenderCount);
-    expect(element.shadowRoot.querySelector("span[data-noise]")).toHaveTextContent("1");
-  });
+  expect(child.renderCount).toBe(initialRenderCount);
+  expect(element.shadowRoot.querySelector("span[data-noise]")).toHaveTextContent("1");
+});
 
-  it("should replace nodes when tag changes", async () => {
-    const element = mount("swap-element");
-    const initialNode = element.shadowRoot.querySelector("p, span");
+it("should replace nodes when tag changes", async () => {
+  const element = mount("swap-element");
+  const initialNode = element.shadowRoot.querySelector("p, span");
 
-    expect(initialNode.tagName).toBe("P");
+  expect(initialNode.tagName).toBe("P");
 
-    element.toggle();
-    await tick();
+  element.toggle();
+  await tick();
 
-    const swappedNode = element.shadowRoot.querySelector("p, span");
-    expect(swappedNode.tagName).toBe("SPAN");
-    expect(swappedNode).not.toBe(initialNode);
-  });
+  const swappedNode = element.shadowRoot.querySelector("p, span");
+  expect(swappedNode.tagName).toBe("SPAN");
+  expect(swappedNode).not.toBe(initialNode);
+});
 
-  it("should serialize attribute values safely", () => {
-    const element = mount("attribute-element");
-    const node = element.shadowRoot.querySelector("div");
+it("should serialize attribute values safely", () => {
+  const element = mount("attribute-element");
+  const node = element.shadowRoot.querySelector("div");
 
-    expect(node.getAttribute("title")).toBe('X " onclick="alert(1) Y');
-    expect(node.hasAttribute("onclick")).toBe(false);
-    expect(node.getAttribute("data-note")).toBe("A&B <tag>");
-  });
+  expect(node.getAttribute("title")).toBe('X " onclick="alert(1) Y');
+  expect(node.hasAttribute("onclick")).toBe(false);
+  expect(node.getAttribute("data-note")).toBe("A&B <tag>");
+});
 
-  it("should cache prop, event, and ref bindings", async () => {
-    const element = mount("regex-parent");
-    const child = element.shadowRoot.querySelector("regex-child");
-    const text = element.shadowRoot.querySelector("em");
+it("should cache prop, event, and ref bindings", async () => {
+  const element = mount("regex-parent");
+  const child = element.shadowRoot.querySelector("regex-child");
+  const text = element.shadowRoot.querySelector("em");
 
-    expect(child.shadowRoot).toHaveTextContent("ok");
-    expect(element.childRef.current).toBe(child);
-    expect(text).toHaveTextContent("1");
-    child.click();
-    await tick();
+  expect(child.shadowRoot).toHaveTextContent("ok");
+  expect(element.childRef.current).toBe(child);
+  expect(text).toHaveTextContent("1");
+  child.click();
+  await tick();
 
-    expect(text).toHaveTextContent("2");
-  });
+  expect(text).toHaveTextContent("2");
+});
 
-  it("should match only prop, event, and ref patterns", async () => {
-    const element = mount("regex-cases");
-    const matchLink = element.shadowRoot.querySelector('a[data-kind="match"]');
-    const noMatchLink = element.shadowRoot.querySelector('a[data-kind="nomatch"]');
-    const text = element.shadowRoot.querySelector("em");
-    const referenceNode = element.shadowRoot.querySelector("div[reference]");
-    expect(element.nodeRef.current).toBe(element.shadowRoot.querySelector("div"));
-    expect(referenceNode.getAttribute("reference")).toBe("nope");
+it("should match only prop, event, and ref patterns", async () => {
+  const element = mount("regex-cases");
+  const matchLink = element.shadowRoot.querySelector('a[data-kind="match"]');
+  const noMatchLink = element.shadowRoot.querySelector('a[data-kind="nomatch"]');
+  const text = element.shadowRoot.querySelector("em");
+  const referenceNode = element.shadowRoot.querySelector("div[reference]");
+  expect(element.nodeRef.current).toBe(element.shadowRoot.querySelector("div"));
+  expect(referenceNode.getAttribute("reference")).toBe("nope");
 
-    matchLink.click();
-    await tick();
-    expect(text).toHaveTextContent("1");
+  matchLink.click();
+  await tick();
+  expect(text).toHaveTextContent("1");
 
-    noMatchLink.click();
-    await tick();
-    expect(text).toHaveTextContent("1");
-  });
+  noMatchLink.click();
+  await tick();
+  expect(text).toHaveTextContent("1");
+});
 
-  it("should run lifecycle hooks at expected times", async () => {
-    const element = mount("lifecycle-element");
-    expect(element.calls).toEqual(["updated", "mounted"]);
+it("should run lifecycle hooks at expected times", async () => {
+  const element = mount("lifecycle-element");
+  expect(element.calls).toEqual(["updated", "mounted"]);
 
-    element.increment();
-    await tick();
-    expect(element.calls).toEqual(["updated", "mounted", "updated"]);
+  element.increment();
+  await tick();
+  expect(element.calls).toEqual(["updated", "mounted", "updated"]);
 
-    element.state.count = 1;
-    await tick();
-    expect(element.calls).toEqual(["updated", "mounted", "updated"]);
+  element.state.count = 1;
+  await tick();
+  expect(element.calls).toEqual(["updated", "mounted", "updated"]);
 
-    document.body.removeChild(element);
-    expect(element.calls).toEqual(["updated", "mounted", "updated", "unmounted"]);
-  });
+  document.body.removeChild(element);
+  expect(element.calls).toEqual(["updated", "mounted", "updated", "unmounted"]);
+});
 
-  it("should reuse style node and update its contents", async () => {
-    const element = mount("style-element");
-    const styleNode = element.shadowRoot.querySelector("style");
-    expect(styleNode).toBeInTheDocument();
-    expect(styleNode).toHaveTextContent("color: red;");
+it("should reuse style node and update its contents", async () => {
+  const element = mount("style-element");
+  const styleNode = element.shadowRoot.querySelector("style");
+  expect(styleNode).toBeInTheDocument();
+  expect(styleNode).toHaveTextContent("color: red;");
 
-    Nho.style = "p { color: blue; }";
-    element.bump();
-    await tick();
+  Nho.style = "p { color: blue; }";
+  element.bump();
+  await tick();
 
-    const nextStyleNode = element.shadowRoot.querySelector("style");
-    expect(nextStyleNode).toBe(styleNode);
-    expect(nextStyleNode).toHaveTextContent("color: blue;");
-  });
+  const nextStyleNode = element.shadowRoot.querySelector("style");
+  expect(nextStyleNode).toBe(styleNode);
+  expect(nextStyleNode).toHaveTextContent("color: blue;");
+});
 
-  it("should remove attributes when no longer rendered", async () => {
-    const element = mount("attribute-toggle");
-    const node = element.shadowRoot.querySelector("div");
-    expect(node.getAttribute("data-active")).toBe("yes");
+it("should remove attributes when no longer rendered", async () => {
+  const element = mount("attribute-toggle");
+  const node = element.shadowRoot.querySelector("div");
+  expect(node.getAttribute("data-active")).toBe("yes");
 
-    element.toggle();
-    await tick();
-    expect(node.hasAttribute("data-active")).toBe(false);
-  });
+  element.toggle();
+  await tick();
+  expect(node.hasAttribute("data-active")).toBe(false);
+});
 
-  it("should swap event handlers when render output changes", async () => {
-    const element = mount("event-swap");
-    const button = element.shadowRoot.querySelector("button");
+it("should swap event handlers when render output changes", async () => {
+  const element = mount("event-swap");
+  const button = element.shadowRoot.querySelector("button");
 
-    button.onclick();
-    await tick();
-    expect(element.state.a).toBe(1);
-    expect(element.state.b).toBe(0);
+  button.onclick();
+  await tick();
+  expect(element.state.a).toBe(1);
+  expect(element.state.b).toBe(0);
 
-    element.toggle();
-    await tick();
-    button.onclick();
-    await tick();
+  element.toggle();
+  await tick();
+  button.onclick();
+  await tick();
 
-    expect(element.state.a).toBe(1);
-    expect(element.state.b).toBe(1);
-  });
+  expect(element.state.a).toBe(1);
+  expect(element.state.b).toBe(1);
+});
 
-  it("should update text nodes when state changes", async () => {
-    const element = mount("text-update");
-    const text = element.shadowRoot.querySelector("p");
-    expect(text).toHaveTextContent("Alpha");
+it("should update text nodes when state changes", async () => {
+  const element = mount("text-update");
+  const text = element.shadowRoot.querySelector("p");
+  expect(text).toHaveTextContent("Alpha");
 
-    element.setBeta();
-    await tick();
-    expect(text).toHaveTextContent("Beta");
-  });
+  element.setBeta();
+  await tick();
+  expect(text).toHaveTextContent("Beta");
+});
 
-  it("should render and update arrays of child nodes", async () => {
-    const element = mount("array-render");
-    const getItems = () => element.shadowRoot.querySelectorAll("li");
-    expect(getItems().length).toBe(2);
-    expect(getItems()[0]).toHaveTextContent("a");
-    expect(getItems()[1]).toHaveTextContent("b");
+it("should render and update arrays of child nodes", async () => {
+  const element = mount("array-render");
+  const getItems = () => element.shadowRoot.querySelectorAll("li");
+  expect(getItems().length).toBe(2);
+  expect(getItems()[0]).toHaveTextContent("a");
+  expect(getItems()[1]).toHaveTextContent("b");
 
-    element.addItem();
-    await tick();
-    expect(getItems().length).toBe(3);
-    expect(getItems()[2]).toHaveTextContent("c");
-  });
+  element.addItem();
+  await tick();
+  expect(getItems().length).toBe(3);
+  expect(getItems()[2]).toHaveTextContent("c");
+});
 
-  it("should update child components when props change", async () => {
-    const element = mount("prop-update-parent");
-    const child = element.shadowRoot.querySelector("prop-update-child");
-    const initialRenderCount = child.renderCount;
+it("should update child components when props change", async () => {
+  const element = mount("prop-update-parent");
+  const child = element.shadowRoot.querySelector("prop-update-child");
+  const initialRenderCount = child.renderCount;
 
-    element.setValue(2);
-    await tick();
-    expect(child.renderCount).toBeGreaterThan(initialRenderCount);
-    expect(child.shadowRoot).toHaveTextContent("2");
-  });
+  element.setValue(2);
+  await tick();
+  expect(child.renderCount).toBeGreaterThan(initialRenderCount);
+  expect(child.shadowRoot).toHaveTextContent("2");
 });

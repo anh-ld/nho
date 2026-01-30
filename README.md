@@ -1,26 +1,25 @@
 ## 📌 Nho
 
-Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for easy Web Component development.
+Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for building simple Web Component.
 
 ### Why Nho?
 
-- Writing a Web Component using vanilla JavaScript can be such tedious. Alternatively, popular libraries can be overkill and overweighted (4KB+) for creating small components like a `"Buy now" button` or a `cart listing drawer`
-
-- `Nho` simplifies the process by staying lightweight, removing unnecessary APIs, and using a simple DOM diffing algorithm
+- Vanilla JS is tedious; popular WC frameworks are overkill (4KB+) for small components like a `buy now button` or `cart drawer`.
+- `Nho` offers a minimal, Vue-inspired API with basic DOM diffing which is fast enough for lightweight use cases.
 
 ### Features
 
-- `1.2KB` gzipped  (`1210 bytes` for `esm` and `1443 bytes` for `umd`)
+- `1.2KB` gzipped  (`1306 bytes` for `esm` and `1554 bytes` for `umd`)
 - Simple API inspired from `Vue`
 - `100%` test coverage
 
-
 ### Example
-- [album list](https://nho-example.netlify.app/) - [source](./example)
+- [Album List](https://nho-example.netlify.app/) - [Source](./example)
 
 ### Limitation
 
-- In order to stay small, `Nho` skips few advanced features found in popular front-end frameworks like `key`, `Fragments`, `memo`. The DOM diffing algorithm is somewhat basic, but it is fast enough for small projects. If your components become too complex, consider other options
+- Omits advanced features: `key`, `Fragments`, `memo`, etc
+- Basic DOM diffing—suitable only for small to medium components. For complex UIs, use a full-fledged framework
 
 ### Installation
 
@@ -165,6 +164,40 @@ setup, onMounted, onUnmounted, onUpdated, effect, ref, reactive, render, style
 ```
 any property that starts with `_`
 ```
+
+### Caveats
+
+#### Literal string props on custom elements created outside `h`
+- Literal string `p:` props on **DOM-created custom elements** are read as cached ids when patched
+- `p:` values can resolve to `undefined` unless the element is **created inside `h`**
+
+```html
+<my-counter p:label="Hello"></my-counter>
+```
+
+
+#### No escaping for text interpolation
+- Text interpolation inserts raw HTML into text nodes
+- Untrusted input can render as HTML rather than plain text
+
+```js
+const userInput = "<img src=x onerror=alert(1)>";
+render(h) {
+  return h`<p>${userInput}</p>`;
+}
+```
+
+
+#### No keyed reordering in diffing
+- List diffing is index-based and does not move nodes
+- Reorders reuse existing DOM nodes, so item identity can drift
+
+```js
+render(h) {
+  return h`<ul>${items.map((item) => h`<li>${item.name}</li>`)}</ul>`;
+}
+```
+
 
 ### How it works
 
