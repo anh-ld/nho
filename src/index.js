@@ -111,11 +111,7 @@ export class Nho extends HTMLElement {
       let replace = () => current.replaceChild(clone(), c);
 
       // if there's no current node, then append new node
-      if (!c) {
-        let mounted = clone();
-        current.appendChild(mounted);
-        if (n.childNodes.length) this._p(mounted, n);
-      }
+      if (!c) current.appendChild(clone());
       // if they have different tags, then replace current node by new node
       else if (c.tagName !== n.tagName) replace();
       // if new node has its children, then recursively patch them
@@ -132,20 +128,13 @@ export class Nho extends HTMLElement {
 
       /* update attributes of current node */
       if (c?.attributes) {
-        let nextAttrs = this._nm(n?.attributes);
+        if (!c.attributes.length && !n?.attributes?.length) return;
 
-        /* remove attributes not present on next node */
-        this._nm(c.attributes).forEach(({ name }) => {
-          if (!nextAttrs.some((attr) => attr.name === name)) c.removeAttribute(name);
-        });
+        /* remove all attributes of current node */
+        while (c.attributes.length > 0) c.removeAttribute(c.attributes[0].name);
 
-        /* add or update attributes from next node */
-        nextAttrs.forEach(({ name, value }) => {
-          if (name.startsWith("on")) {
-            let index = +value;
-            c[name] = Nho._c.get(index) || null;
-          } else if (c.getAttribute(name) !== value) c.setAttribute(name, value);
-        });
+        /* add new attributes from new node to current node */
+        this._nm(n?.attributes).forEach(({ name, value }) => c.setAttribute(name, value));
       }
     });
   }
@@ -154,7 +143,7 @@ export class Nho extends HTMLElement {
   _h(stringArray, ...valueArray) {
     return stringArray
       .map((s, index) => {
-        let currentValue = valueArray[index] || "";
+        let currentValue = valueArray[index] ?? "";
         let valueString = currentValue;
 
         // if string ends with "=", then it's gonna be a value hereafter
@@ -178,11 +167,18 @@ export class Nho extends HTMLElement {
 
   /* events to dom */
   _e() {
-    /* bind refs */
-    this._sr.querySelectorAll("[ref]").forEach((node) => {
-      let index = +node.getAttribute("ref");
-      let ref = Nho._c.get(index);
-      if (ref) ref.current = node;
+    this._sr.querySelectorAll("*").forEach((node) => {
+      if (!node.attributes.length) return;
+
+      this._nm(node.attributes).forEach(({ name, value }) => {
+        let index = +value;
+
+        if (name.startsWith("on")) node[name] = Nho._c.get(index) || null;
+        if (name === "ref") {
+          let ref = Nho._c.get(index);
+          if (ref) ref.current = node;
+        }
+      });
     });
   }
 

@@ -27,7 +27,7 @@
     "build:module": "bun build src/index.js --target=browser --format=esm --outdir=dist --entry-naming=index.es.js --minify",
     "build:umd": "bun build src/index.js --target=browser --format=iife --outdir=dist --entry-naming=index.umd.js --minify",
     "size": "for f in dist/index.{es,umd}.js; do [ -f \"$f\" ] && { case \"$f\" in *.es.js) l=esm;; *.umd.js) l=umd;; esac; echo \"$l size: $(wc -c <\"$f\")\"; echo \"$l gzip: $(gzip -c \"$f\" | wc -c)\"; }; done",
-    "build:example": "bun build example/main.js --target=browser --format=esm --outdir=example/dist --entry-naming=main.js --sourcemap",
+    "build:example": "bun build example/main.js --target=browser --format=esm --outdir=example/dist --entry-naming=main.js --minify",
     "coverage": "bun test --coverage",
     "test": "bun test",
     "test:watch": "bun test --watch",

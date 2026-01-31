@@ -9,12 +9,12 @@ Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for building 
 
 ### Features
 
-- `1.2KB` gzipped  (`1306 bytes` for `esm` and `1554 bytes` for `umd`)
+- `1.2KB` gzipped  (`1291 bytes` for `esm` and `1533 bytes` for `umd`)
 - Simple API inspired from `Vue`
 - `100%` test coverage
 
 ### Example
-- [Album List](https://nho-example.netlify.app/) - [Source](./example)
+- [Ecommerce Cart](https://nho-example.netlify.app/) - [Source](./example)
 
 ### Limitation
 
