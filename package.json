@@ -1,7 +1,10 @@
 {
-  "name": "nho",
+  "name": "@anh-ld/nho",
   "version": "0.3.0",
-  "description": "1KB Web Component Abstraction",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "description": "~1.2KB Web Component abstraction",
   "keywords": ["nho", "web component"],
   "repository": {
     "type": "git",
@@ -34,7 +37,6 @@
     "dev": "bun run build:example --watch",
     "serve": "bunx serve example",
     "postinstall": "bunx simple-git-hooks",
-    "release": "bunx release-it",
     "check": "bunx @biomejs/biome check --write .",
     "clean": "rm -rf dist example/dist"
   },
@@ -49,16 +51,7 @@
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/user-event": "14.5.2",
     "jsdom": "22.1.0",
-    "release-it": "16.3.0",
     "serve": "14.2.5",
     "simple-git-hooks": "2.11.1"
-  },
-  "release-it": {
-    "git": {
-      "commitMessage": "chore: release v${version}"
-    },
-    "github": {
-      "release": true
-    }
   }
 }

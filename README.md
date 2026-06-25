@@ -1,139 +1,92 @@
-## 📌 Nho
+# 📌 Nho
 
-Nho (`nhỏ` | `small` in `Vietnamese`) is a tiny library designed for building simple Web Component.
+> `nhỏ` — "small" in Vietnamese
 
-### Why Nho?
+A tiny (`~1.2KB` gzipped) library for building Web Components.
 
-- Vanilla JS is tedious; popular WC frameworks are overkill (4KB+) for small components like a `buy now button` or `cart drawer`.
-- `Nho` offers a minimal, Vue-inspired API with basic DOM diffing which is fast enough for lightweight use cases.
+- **Small** — `1291 bytes` (esm), `1533 bytes` (umd), gzipped
+- **Familiar** — Vue-inspired API
+- **Simple** — reactive state, lifecycle hooks, effects, refs
+- **Tested** — `100%` coverage
 
-### Features
+[**Live demo: Ecommerce Cart**](https://nho-example.netlify.app/) · [source](./example)
 
-- `1.2KB` gzipped  (`1291 bytes` for `esm` and `1533 bytes` for `umd`)
-- Simple API inspired from `Vue`
-- `100%` test coverage
+## Why?
 
-### Example
-- [Ecommerce Cart](https://nho-example.netlify.app/) - [Source](./example)
+Vanilla Web Components are tedious, full frameworks are overkill — Nho is the happy middle: tiny, reactive, no fuss.
 
-### Limitation
+## Install
 
-- Omits advanced features: `key`, `Fragments`, `memo`, etc
-- Basic DOM diffing—suitable only for small to medium components. For complex UIs, use a full-fledged framework
-
-### Installation
-
-#### using `npm`
-First, run
+Nho is published to **GitHub Packages** under the `@anh-ld` scope. Point the scope at the GitHub registry in your `.npmrc`:
 
 ```
-npm install nho
+@anh-ld:registry=https://npm.pkg.github.com
 ```
 
-> The package is published on `npm`, so other package managers (e.g. `yarn`, `pnpm`, `bun`) still work
+Then install:
 
-then
-```js
-import { Nho } from 'nho';
-class MyCounterChild extends Nho {}
+```sh
+npm install @anh-ld/nho
 ```
-
-
-#### using `CDN`
-First, add `script` to the `html` file
-```html
-<script src="https://unpkg.com/nho"></script>
-```
-
-then, add `script` to the `html` file
-
-```html
-<script>
-  let Nho = nho.Nho;
-  class MyCounterChild extends Nho {}
-</script>
-```
-
-### Usage
 
 ```js
-/* main.js */
+import { Nho } from "@anh-ld/nho";
 
-/* declare global style. Styles will be injected to all Nho Elements */
+class MyCounter extends Nho {}
+```
+
+## Usage
+
+```js
+/* Global styles — injected into every Nho element */
 Nho.style = `
-  .box {
-    background: blue;
-    color: yellow;
-  }
-`
+  .box { background: blue; color: yellow; }
+`;
 
 class MyCounterChild extends Nho {
   render(h) {
-    /* bind value from props */
-    return h`<div>Child: ${this.props.count}</div>`
+    return h`<div>Child: ${this.props.count}</div>`;
   }
 }
 
 class MyCounter extends Nho {
   setup() {
-    /* this method runs before mount */
+    /* runs before mount */
+    this.state = this.reactive({ count: 1 }); /* state must be an object */
+    this.pRef = this.ref(); /* holds a DOM reference */
 
-    /* create component state using "this.reactive", state must be an object */
-    this.state = this.reactive({ count: 1 });
-
-    /* only use ref for storing DOM reference */
-    this.pRef = this.ref();
-
-    /* effect */
+    /* run callback whenever the value changes */
     this.effect(
-      // effect value: fn -> value
       () => this.state.count,
-      // effect callback: fn(old value, new value)
-      (oldValue, newValue) => {
-        console.log(oldValue, newValue)
-      }
-    )
+      (oldValue, newValue) => console.log(oldValue, newValue),
+    );
   }
 
+  /* lifecycle hooks — all optional */
   onMounted() {
-    /* this method runs after mount */
-    console.log('Mounted');
+    console.log("mounted");
   }
-
   onUpdated() {
-    /* this method runs after each update. */
-    console.log('Updated');
-
-    /* P tag ref */
-    console.log('P Ref', this.pRef?.current);
+    console.log("updated, p ref:", this.pRef.current);
   }
-
   onUnmounted() {
-    /* this method runs before unmount */
-    console.log('Before unmount');
+    console.log("before unmount");
   }
 
   addCount() {
-    /* update state by redeclaring its key-value. Avoid updating the whole state. */
+    /* reassign a key — don't replace the whole state object */
     this.state.count += 1;
   }
 
   render(h) {
-    /* this method is used to render */
-
-    /*
-      JSX template alike
-      - Must have only 1 root element
-      - Bind state / event using value in literal string
-      - Pass state to child element using props with 'p:' prefix
-     */
+    /* one root element; bind state/events inline; pass props with "p:" */
     return h`
       <div class="box">
-        <p ref=${this.pRef}>Name: ${this.state.count}</p>
-        <button onclick=${this.addCount}>Add count</button>
+        <p ref=${this.pRef}>Count: ${this.state.count}</p>
+        <button onclick=${this.addCount}>Add</button>
         <my-counter-child p:count=${this.state.count + 5}></my-counter-child>
       </div>
-    `
+    `;
   }
 }
 
@@ -142,93 +95,51 @@ customElements.define("my-counter-child", MyCounterChild);
 ```
 
 ```html
-/* index.html */
 <my-counter></my-counter>
 ```
 
-### Development (Bun)
-- Install dependencies: `bun install`
-- Build the library bundles: `bun run build`
-- Build/watch the example app: `bun run dev` (outputs to `example/dist`, open `example/index.html`)
-- Serve the example folder: `bun run serve` (default http://localhost:3000)
-- Run tests: `bun test`
+## API
 
-### Notice
-- **Avoid** using these below properties inside Nho Component since they are reversed Nho's properties
+| Member | Description |
+| --- | --- |
+| `setup()` | Runs before mount. Initialize state, refs, effects here. |
+| `render(h)` | Returns the template. `h` is a tagged-template helper. |
+| `reactive(obj)` | Returns reactive state; mutating a key triggers a batched re-render. |
+| `ref(initial?)` | Returns `{ current }`, for DOM references via `ref=`. |
+| `effect(valueFn, cb)` | Runs `cb(old, new)` when `valueFn()` changes between updates. |
+| `onMounted()` / `onUpdated()` / `onUnmounted()` | Lifecycle hooks. |
+| `Nho.style` | Static string of CSS injected into every element. |
 
+> **Reserved** — don't define your own members named above, `props`, or anything starting with `_`.
 
-```
-setup, onMounted, onUnmounted, onUpdated, effect, ref, reactive, render, style
-```
-
-```
-any property that starts with `_`
-```
-
-### Caveats
-
-#### Literal string props on custom elements created outside `h`
-- Literal string `p:` props on **DOM-created custom elements** are read as cached ids when patched
-- `p:` values can resolve to `undefined` unless the element is **created inside `h`**
-
-```html
-<my-counter p:label="Hello"></my-counter>
-```
-
-
-#### No escaping for text interpolation
-- Text interpolation inserts raw HTML into text nodes
-- Untrusted input can render as HTML rather than plain text
-
-```js
-const userInput = "<img src=x onerror=alert(1)>";
-render(h) {
-  return h`<p>${userInput}</p>`;
-}
-```
-
-
-#### No keyed reordering in diffing
-- List diffing is index-based and does not move nodes
-- Reorders reuse existing DOM nodes, so item identity can drift
-
-```js
-render(h) {
-  return h`<ul>${items.map((item) => h`<li>${item.name}</li>`)}</ul>`;
-}
-```
-
-
-### How it works
-
-- It's better to dive into the code, but here is a diagram about how `Nho` works
+## How it works
 
 ```mermaid
 flowchart LR
-  subgraph Main
-    direction LR
-    A[State change] --> B[Proxy set trap]
-    B --> C[Batched via requestAnimationFrame]
-    C --> D[Render template]
-    D --> E[Parse to DOM]
-    E --> F[Diff & patch current DOM]
-    F --> G[Bind props, events, refs]
-    G --> H[Run lifecycle + effects]
-  end
-
-  subgraph Cache[Cache + bind]
-    direction TB
-    N1[/Collect p: props and on* handlers while rendering/]
-    N2[/Attach cached handlers and refs/]
-    N1 --> N2
-  end
-  D -. cache .-> N1
-  N2 -. apply .-> G
-
-  R["Diff steps (order):<br>1. Trim extra children<br>2. Compare each new child by index<br>3. Clone if missing<br>4. Replace if tag/text differs<br>5. Sync attributes in place"]
-  F -. uses .-> R
+  A[State change] --> B[Batched re-render] --> C[Render & diff] --> D[Patch DOM] --> E[Bind + lifecycle]
 ```
 
-### Mentions
+Diffing is index-based: trim extra children, compare each child by index, clone if missing, replace on tag/text mismatch, and sync attributes in place. Props, `on*` handlers, and `ref`s are cached during render and re-attached after patching.
 
-- [Frontend Focus's #651 issue](https://frontendfoc.us/issues/651)
+## Limitations
+
+- No `key`, `Fragments`, or `memo` — basic diffing, best for small/medium components.
+- **No keyed reordering** — list diffing is index-based, so reordered items reuse existing nodes and identity can drift.
+- **No escaping in text interpolation** — interpolated values insert raw HTML. Don't pass untrusted input into templates.
+- **`p:` props need `h`** — string `p:` props on custom elements created outside `h` resolve to `undefined`; create them inside `h`.
+
+For complex UIs, use a full framework.
+
+## Development (Bun)
+
+```sh
+bun install        # dependencies
+bun run build      # build library bundles
+bun run dev        # build/watch the example (open example/index.html)
+bun run serve      # serve the example folder
+bun test           # run tests
+```
+
+## Mentions
+
+- [Frontend Focus #651](https://frontendfoc.us/issues/651)
