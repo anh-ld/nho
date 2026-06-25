@@ -4,7 +4,7 @@
 
 A tiny (`~1.2KB` gzipped) library for building Web Components.
 
-- **Small** — `1291 bytes` (esm), `1533 bytes` (umd), gzipped
+- **Small** — `1294 bytes` (esm), `1578 bytes` (umd), gzipped
 - **Familiar** — Vue-inspired API
 - **Simple** — reactive state, lifecycle hooks, effects, refs
 - **Tested** — `100%` coverage

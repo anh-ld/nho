@@ -58,7 +58,7 @@ export class Nho extends HTMLElement {
 
     /* reuse style node when possible */
     if (!this._s) this._s = document.createElement("style");
-    this._s.textContent = Nho.style;
+    if (this._s.textContent !== Nho.style) this._s.textContent = Nho.style;
 
     /* run patch */
     this._p(this._sr, t.content, this._s);
@@ -96,8 +96,7 @@ export class Nho extends HTMLElement {
     if (styleNode) nNodes.unshift(styleNode);
 
     /* compare new nodes and old (current) nodes, if number of old nodes > new nodes, then remove the gap */
-    let gap = cNodes.length - nNodes.length;
-    if (gap > 0) for (; gap > 0; gap--) current.removeChild(current.lastChild);
+    for (let gap = cNodes.length - nNodes.length; gap > 0; gap--) current.removeChild(current.lastChild);
 
     /* loop through each new node, compare with it's correlative current node */
     nNodes.forEach((_, i) => {

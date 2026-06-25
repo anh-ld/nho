@@ -341,7 +341,7 @@ const mount = (tagName) => {
 
 beforeEach(() => {
   document.body.innerHTML = "";
-  Nho._c.length = 0;
+  Nho._c.clear();
   Nho.style = `
       p {
         color: red;
