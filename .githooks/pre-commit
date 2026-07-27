@@ -1,0 +1,2 @@
+#!/bin/sh
+bun test && bun run check && git add .

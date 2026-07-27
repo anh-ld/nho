@@ -30,18 +30,13 @@
     "build:module": "bun build src/index.js --target=browser --format=esm --outdir=dist --entry-naming=index.es.js --minify",
     "build:umd": "bun build src/index.js --target=browser --format=iife --outdir=dist --entry-naming=index.umd.js --minify",
     "size": "for f in dist/index.{es,umd}.js; do [ -f \"$f\" ] && { case \"$f\" in *.es.js) l=esm;; *.umd.js) l=umd;; esac; echo \"$l size: $(wc -c <\"$f\")\"; echo \"$l gzip: $(gzip -c \"$f\" | wc -c)\"; }; done",
-    "build:example": "bun build example/main.js --target=browser --format=esm --outdir=example/dist --entry-naming=main.js --minify",
+    "build:example": "bun build ./example/index.html --outdir=example/dist --minify",
     "coverage": "bun test --coverage",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "dev": "bun run build:example --watch",
-    "serve": "bunx serve example",
-    "postinstall": "bunx simple-git-hooks",
+    "dev": "bun ./example/index.html",
     "check": "bunx @biomejs/biome check --write .",
     "clean": "rm -rf dist example/dist"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "bun test && bun run check && git add ."
   },
   "npmConfig": {
     "save-exact": true
@@ -50,8 +45,6 @@
     "@biomejs/biome": "1.8.3",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/user-event": "14.5.2",
-    "jsdom": "22.1.0",
-    "serve": "14.2.5",
-    "simple-git-hooks": "2.11.1"
+    "jsdom": "22.1.0"
   }
 }
