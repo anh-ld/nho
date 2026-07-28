@@ -14,7 +14,6 @@ Nho.style = `
 
   .page {
     background: #f6f6f6;
-    min-height: 100vh;
     height: 100vh;
     color: #101010;
     overflow: auto;
@@ -112,9 +111,6 @@ Nho.style = `
     display: flex;
     flex-direction: column;
     gap: 14px;
-  }
-
-  .product-card:hover {
     cursor: pointer;
   }
 
@@ -144,11 +140,6 @@ Nho.style = `
     gap: 12px;
   }
 
-  .product-actions {
-    display: inline-flex;
-    gap: 8px;
-  }
-
   .price {
     font-weight: 700;
     font-size: 20px;
@@ -162,21 +153,11 @@ Nho.style = `
     font-weight: 600;
   }
 
-  .buy-button,
-  .ghost-button {
+  .buy-button {
     border-radius: 999px;
     font-size: 13px;
     font-weight: 600;
-  }
-
-  .buy-button {
     padding: 10px 16px;
-  }
-
-  .ghost-button {
-    border: 1px solid #111;
-    color: #111;
-    padding: 10px 14px;
   }
 
   .quick-overlay {
@@ -267,7 +248,6 @@ Nho.style = `
     }
 
     .quick-media {
-      min-height: 140px;
       height: 140px;
     }
 
@@ -436,10 +416,7 @@ Nho.style = `
   }
 `;
 
-const formatPrice = (value) => {
-  const n = Number(value ?? 0);
-  return `$${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
-};
+const formatPrice = (value) => `$${value.toFixed(2)}`;
 
 const priceFromId = (id) => {
   const base = 12 + (id % 7) * 6;
@@ -464,16 +441,10 @@ class ProductCard extends Nho {
         <div class="product-body">${product.body}</div>
         <div class="product-footer">
           <span class="price">${formatPrice(product.price)}</span>
-          <div class="product-actions">
-            <button class="ghost-button" onclick=${(event) => {
-              event.stopPropagation();
-              onquickview(product);
-            }}>View</button>
-            <button class="buy-button" onclick=${(event) => {
-              event.stopPropagation();
-              onbuy(product);
-            }}>Add</button>
-          </div>
+          <button class="buy-button" onclick=${(event) => {
+            event.stopPropagation();
+            onbuy(product);
+          }}>Add</button>
         </div>
       </div>
     `;
@@ -482,15 +453,20 @@ class ProductCard extends Nho {
 
 class QuickView extends Nho {
   setup() {
-    this.state = this.reactive({ qty: 1, productId: null });
+    this.state = { qty: 1 };
+    this.closeRef = this.ref();
+  }
+
+  onMounted() {
+    this.closeRef.current.focus();
   }
 
   incrementQty() {
-    this.state.qty += 1;
+    this.setState({ qty: this.state.qty + 1 });
   }
 
   decrementQty() {
-    if (this.state.qty > 1) this.state.qty -= 1;
+    if (this.state.qty > 1) this.setState({ qty: this.state.qty - 1 });
   }
 
   handleAdd(product, onbuy, onclose) {
@@ -501,15 +477,10 @@ class QuickView extends Nho {
   render(h) {
     const { product, onclose, onbuy } = this.props;
 
-    if (this.state.productId !== product.id) {
-      this.state.productId = product.id;
-      this.state.qty = 1;
-    }
-
     return h`
       <div class="quick-overlay" onclick=${onclose}>
         <div class="quick-card" onclick=${(event) => event.stopPropagation()}>
-          <button class="quick-close" onclick=${onclose}>×</button>
+          <button class="quick-close" ref=${this.closeRef} onclick=${onclose}>×</button>
           <div class="quick-media" style="background: #${product.color}"></div>
           <div class="quick-meta">
             <div class="quick-title">${product.title}</div>
@@ -535,7 +506,8 @@ class QuickView extends Nho {
 
 class CartDrawer extends Nho {
   render(h) {
-    const { items, onclose, oninc, ondec, onremove, oncheckout, total, message } = this.props;
+    const { items, onclose, oninc, ondec, onremove, oncheckout, message } = this.props;
+    const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
     return h`
       <div class="cart-overlay">
@@ -565,7 +537,7 @@ class CartDrawer extends Nho {
                             <button class="remove-button" onclick=${() => onremove(item.id)}>Remove</button>
                           </div>
                         </div>
-                        <div class="cart-item-price">${formatPrice(item.price)}</div>
+                        <div class="cart-item-price">${formatPrice(item.price * item.qty)}</div>
                       </div>
                     `,
                   )}
@@ -588,27 +560,39 @@ class CartDrawer extends Nho {
 
 class ShopApp extends Nho {
   setup() {
-    this.state = this.reactive({
+    this.state = {
       products: [],
       isLoading: true,
       cart: [],
       isCartOpen: false,
       quickViewProduct: null,
       checkoutMessage: "",
-    });
+    };
+
+    this.pageRef = this.ref();
+
+    /* .page is the scroller, not body, so lock it while an overlay is up */
+    this.effect(
+      () => this.state.isCartOpen || !!this.state.quickViewProduct,
+      (_, locked) => {
+        this.pageRef.current.style.overflow = locked ? "hidden" : "auto";
+      },
+    );
   }
 
   async onMounted() {
-    const response = await fetch("https://jsonplaceholder.typicode.com/posts");
-    const posts = (await response.json()) || [];
-    this.state.products = posts.slice(0, 9).map((post) => ({
+    const posts = await fetch("https://jsonplaceholder.typicode.com/posts")
+      .then((response) => response.json())
+      .catch(() => []);
+
+    const products = posts.slice(0, 9).map((post) => ({
       id: post.id,
       title: post.title,
       body: post.body,
       price: priceFromId(post.id),
       color: colorFromId(post.id),
     }));
-    this.state.isLoading = false;
+    this.setState({ products, isLoading: false });
   }
 
   cartCount() {
@@ -616,38 +600,35 @@ class ShopApp extends Nho {
   }
 
   openCart() {
-    this.state.isCartOpen = true;
-    this.state.checkoutMessage = "";
-    document.body.style.overflow = "hidden";
+    this.setState({ isCartOpen: true, checkoutMessage: "" });
   }
 
   closeCart() {
-    this.state.isCartOpen = false;
-    document.body.style.overflow = "";
+    this.setState({ isCartOpen: false });
   }
 
   openQuickView(product) {
-    this.state.quickViewProduct = product;
+    this.setState({ quickViewProduct: product });
   }
 
   closeQuickView() {
-    this.state.quickViewProduct = null;
+    this.setState({ quickViewProduct: null });
   }
 
   addToCart(product, qty = 1) {
-    const count = Math.max(1, Number(qty) || 1);
-    const existing = this.state.cart.find((item) => item.id === product.id);
-    if (existing) {
-      existing.qty += count;
-      this.state.cart = [...this.state.cart];
-    } else {
-      this.state.cart = [...this.state.cart, { ...product, qty: count }];
-    }
+    const { cart } = this.state;
+    const existing = cart.find((item) => item.id === product.id);
+
+    this.setState({
+      cart: existing
+        ? cart.map((item) => (item === existing ? { ...item, qty: item.qty + qty } : item))
+        : [...cart, { ...product, qty }],
+    });
     this.openCart();
   }
 
   incrementItem(id) {
-    this.state.cart = this.state.cart.map((item) => (item.id === id ? { ...item, qty: item.qty + 1 } : item));
+    this.setState({ cart: this.state.cart.map((item) => (item.id === id ? { ...item, qty: item.qty + 1 } : item)) });
   }
 
   decrementItem(id) {
@@ -657,24 +638,21 @@ class ShopApp extends Nho {
       this.removeItem(id);
       return;
     }
-    this.state.cart = this.state.cart.map((item) => (item.id === id ? { ...item, qty: item.qty - 1 } : item));
+    this.setState({ cart: this.state.cart.map((item) => (item.id === id ? { ...item, qty: item.qty - 1 } : item)) });
   }
 
   removeItem(id) {
-    this.state.cart = this.state.cart.filter((item) => item.id !== id);
+    this.setState({ cart: this.state.cart.filter((item) => item.id !== id) });
   }
 
   checkout() {
     if (!this.state.cart.length) return;
-    this.state.cart = [];
-    this.state.checkoutMessage = "Checkout complete. Thanks for your order.";
+    this.setState({ cart: [], checkoutMessage: "Checkout complete. Thanks for your order." });
   }
 
   render(h) {
-    const cartTotal = this.state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-
     return h`
-      <div class="page">
+      <div class="page" ref=${this.pageRef}>
         <header class="header">
           <div class="header-inner">
             <h1>Nho Commerce</h1>
@@ -695,9 +673,9 @@ class ShopApp extends Nho {
                   (product) =>
                     h`<product-card
                       class="grid-item"
-                      p:product=${product}
-                      p:onBuy=${this.addToCart}
-                      p:onQuickView=${this.openQuickView}
+                      product=${product}
+                      onBuy=${this.addToCart}
+                      onQuickView=${this.openQuickView}
                     ></product-card>`,
                 )}
               </section>
@@ -706,23 +684,22 @@ class ShopApp extends Nho {
         ${
           this.state.quickViewProduct
             ? h`<quick-view
-                p:product=${this.state.quickViewProduct}
-                p:onClose=${this.closeQuickView}
-                p:onBuy=${this.addToCart}
+                product=${this.state.quickViewProduct}
+                onClose=${this.closeQuickView}
+                onBuy=${this.addToCart}
               ></quick-view>`
             : ""
         }
         ${
           this.state.isCartOpen
             ? h`<cart-drawer
-                p:items=${this.state.cart}
-                p:onClose=${this.closeCart}
-                p:onInc=${this.incrementItem}
-                p:onDec=${this.decrementItem}
-                p:onRemove=${this.removeItem}
-                p:onCheckout=${this.checkout}
-                p:total=${cartTotal}
-                p:message=${this.state.checkoutMessage}
+                items=${this.state.cart}
+                onClose=${this.closeCart}
+                onInc=${this.incrementItem}
+                onDec=${this.decrementItem}
+                onRemove=${this.removeItem}
+                onCheckout=${this.checkout}
+                message=${this.state.checkoutMessage}
               ></cart-drawer>`
             : ""
         }

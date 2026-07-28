@@ -1,256 +1,242 @@
-export class Nho extends HTMLElement {
-  /* NATIVE HTML ELEMENT LIFECYCLE */
+let cache = new WeakMap();
+let MARK = "$nho$";
 
+/* capture, parse nothing. "s" marks a template */
+export let html = (s, ...v) => ({ s, v });
+
+/* skeleton, once per template. hole in text -> comment anchor, hole in a tag -> attribute sentinel */
+let compile = (strings) => {
+  let markup = "";
+  let inTag = false;
+
+  strings.forEach((s, index) => {
+    let open = s.lastIndexOf("<");
+    let close = s.lastIndexOf(">");
+
+    /* neither found? stay where the last chunk left us */
+    if (open !== close) inTag = open > close;
+
+    markup += s + (index < strings.length - 1 ? (inTag ? MARK : `<!--${MARK}-->`) : "");
+  });
+
+  let t = document.createElement("template");
+  t.innerHTML = markup;
+
+  /* one walk, every hole, in hole order */
+  let parts = [];
+  let walker = document.createTreeWalker(t.content, 129);
+  let index = -1;
+  let hole = 0;
+  let node;
+
+  while ((node = walker.nextNode())) {
+    index++;
+
+    /* only comments carry data */
+    if (node.data != null) {
+      if (node.data === MARK) parts.push({ i: index, h: hole++ });
+      continue;
+    }
+
+    [...node.attributes].forEach(({ name, value }) => {
+      if (!value.includes(MARK)) return;
+
+      /* one attribute, many holes: class="btn ${a} ${b}" */
+      let statics = value.split(MARK);
+
+      /* dash in tag = custom element = props, not attributes */
+      parts.push({ i: index, n: name, s: statics, h: hole, c: statics.length - 1, o: node.localName.includes("-") });
+      hole += statics.length - 1;
+      node.removeAttribute(name);
+    });
+  }
+
+  return { t: t.content, p: parts };
+};
+
+/* clone the skeleton, index its nodes in walk order */
+let instantiate = (strings) => {
+  let compiled = cache.get(strings);
+  if (!compiled) cache.set(strings, (compiled = compile(strings)));
+
+  let root = compiled.t.cloneNode(true);
+  let walker = document.createTreeWalker(root, 129);
+  let nodes = [];
+  let node;
+
+  while ((node = walker.nextNode())) nodes.push(node);
+
+  return { r: root, p: compiled.p, d: nodes, l: [], c: [] };
+};
+
+/* text hole: text, a nested template, or a list of either */
+let setChild = (inst, k, anchor, value, host) => {
+  let list = Array.isArray(value) ? value : [value];
+  let state = inst.c[k] || (inst.c[k] = []);
+
+  /* drop what the new value dropped */
+  while (state.length > list.length) state.pop()[2].forEach((node) => node.remove());
+
+  /* child = [strings, instance, nodes]. strings is the identity */
+  list.forEach((item, index) => {
+    let child = state[index];
+    let strings = item && item.s;
+
+    /* same identity: patch in place */
+    if (child && child[0] === strings) {
+      if (strings) return update(child[1], item.v, host);
+
+      child[2][0].data = item == null || item === true || item === false ? "" : item;
+
+      return;
+    }
+
+    if (child) child[2].forEach((node) => node.remove());
+
+    let nested = strings && instantiate(strings);
+    let node = nested ? nested.r : document.createTextNode(item == null || item === true || item === false ? "" : item);
+
+    /* fragment empties on insert, remember its children first */
+    let nodes = nested ? [...nested.r.childNodes] : [node];
+
+    if (nested) update(nested, item.v, host);
+    anchor.before(node);
+    state[index] = [strings, nested, nodes];
+  });
+};
+
+/* write changed values into the nodes already found */
+let update = (inst, values, host) => {
+  inst.p.forEach((part, k) => {
+    let node = inst.d[part.i];
+
+    /* text hole */
+    if (!part.n) {
+      let value = values[part.h];
+
+      /* templates and lists always re-check, contents change in place */
+      if (value === inst.l[part.h] && !value?.s && !Array.isArray(value)) return;
+
+      inst.l[part.h] = value;
+      setChild(inst, k, node, value, host);
+
+      return;
+    }
+
+    let changed = false;
+    for (let i = 0; i < part.c; i++) {
+      if (values[part.h + i] !== inst.l[part.h + i]) changed = true;
+      inst.l[part.h + i] = values[part.h + i];
+    }
+
+    /* props always re-write, same object can hold new contents */
+    if (!changed && !part.o) return;
+
+    let name = part.n;
+
+    /* lone hole keeps the raw value, mixed statics build a string */
+    let value =
+      part.c === 1 && !part.s[0] && !part.s[1]
+        ? values[part.h]
+        : part.s.reduce((acc, s, i) => acc + values[part.h + i - 1] + s);
+
+    /* on a custom element every "on*" is a prop, so onClose reaches the child, not HTMLElement's onclose */
+    if (name === "ref") value.current = node;
+    else if (part.o) {
+      /* bound to the owner, like an inline handler */
+      (node.props ??= {})[name] = value instanceof Function ? value.bind(host) : value;
+
+      /* an object can hold new contents under the same identity, a function cannot */
+      if (changed || (value && typeof value === "object")) node._s?.();
+    } else if (name.startsWith("on") && name in node) node[name] = value ? value.bind(host) : null;
+    else if (value == null || value === false) node.removeAttribute(name);
+    else node.setAttribute(name, value);
+  });
+};
+
+export class Nho extends HTMLElement {
   constructor() {
     super();
 
-    /* old props */
-    this._op = {};
-
-    /* current props */
-    this.props = {};
-
-    /*
-      key: effect function, value: effect callback
-      e.g: () => this.state.count : (oldValue, newValue) => console.log(oldValue, newValue)
-    */
-    this._ef = new Map();
-
-    /*
-      key: effect function, value: effect function value
-      e.g: () => this.state.count : 100
-    */
-    this._ev = new Map();
+    /* value fn -> [callback, last value] */
+    this._e = new Map();
 
     this._sr = this.attachShadow({ mode: "open" });
   }
 
   connectedCallback() {
-    /* set host attributes to be props */
-    this._ga(this.attributes);
+    /* mount once, even when moved in the dom */
+    if (!this._m) {
+      this._m = 1;
 
-    /* run setup before mounting */
-    this.setup?.();
+      /* a parent may have set props before upgrade, keep them */
+      this.props ??= {};
 
-    /* update without callback fn */
+      /* host attributes are props too: <my-el count="5"> */
+      [...this.attributes].forEach(({ name, value }) => (this.props[name] = value));
+
+      this.setup?.();
+    }
+
     this._u();
-
-    /* run onMounted callback if needed */
     this.onMounted?.();
   }
 
   disconnectedCallback() {
+    /* drop the pending update, must not run after unmount */
+    cancelAnimationFrame(this._t);
+
     this.onUnmounted?.();
   }
 
-  /* INTERNAL FUNCTIONS */
-
   /* update */
-  _u(shouldShallowCompareProps = false) {
-    /* avoid new update when props is not changed (shallow comparison) */
-    if (shouldShallowCompareProps && this._sc(this._op, this.props)) return;
+  _u() {
+    let result = this.render(html);
+    let first = !this._i;
 
-    Nho._d++;
+    if (first) this._i = instantiate(result.s);
 
-    /* get html fragment */
-    let t = document.createElement("template");
-    t.innerHTML = this.render(this._h.bind(this));
+    update(this._i, result.v, this);
 
-    /* reuse style node when possible */
-    if (!this._s) this._s = document.createElement("style");
-    if (this._s.textContent !== Nho.style) this._s.textContent = Nho.style;
+    if (first) {
+      if (Nho.style) this._sr.innerHTML = `<style>${Nho.style}</style>`;
 
-    /* run patch */
-    this._p(this._sr, t.content, this._s);
+      this._sr.append(this._i.r);
+    }
 
-    /* bind events to dom after patching */
-    this._e();
-
-    /* run onUpdated callback if needed */
     this.onUpdated?.();
 
-    /* run effects if needed */
-    this._ef.forEach((callback, valueFn) => {
-      /* get value before and after update */
-      let valueBeforeUpdate = this._ev.get(valueFn);
-      let valueAfterUpdate = valueFn.call(this);
+    /* run effects whose value changed */
+    this._e.forEach((e, valueFn) => {
+      let after = valueFn.call(this);
 
-      /* run effect if value changed */
-      if (valueBeforeUpdate !== valueAfterUpdate) callback.call(this, valueBeforeUpdate, valueAfterUpdate);
-
-      /* update new effect value */
-      this._ev.set(valueFn, valueAfterUpdate);
-    });
-
-    /* clear cache after outermost render finishes */
-    if (!--Nho._d) {
-      Nho._c.clear();
-      Nho._i = 0;
-    }
-  }
-
-  /* patching, dom diffing */
-  _p(current, next, styleNode) {
-    let cNodes = this._nm(current.childNodes);
-    let nNodes = this._nm(next.childNodes);
-    if (styleNode) nNodes.unshift(styleNode);
-
-    /* compare new nodes and old (current) nodes, if number of old nodes > new nodes, then remove the gap */
-    for (let gap = cNodes.length - nNodes.length; gap > 0; gap--) current.removeChild(current.lastChild);
-
-    /* loop through each new node, compare with it's correlative current node */
-    nNodes.forEach((_, i) => {
-      let c = cNodes[i];
-      let n = nNodes[i];
-
-      /* function to clone new node */
-      let clone = () => n.cloneNode(true);
-
-      /* function to replace old node by new node */
-      let replace = () => current.replaceChild(clone(), c);
-
-      // if there's no current node, then append new node
-      if (!c) current.appendChild(clone());
-      // if they have different tags, then replace current node by new node
-      else if (c.tagName !== n.tagName) replace();
-      // if new node has its children, then recursively patch them
-      else if (n.childNodes.length) this._p(c, n);
-      // if both current and new nodes are custom elements
-      // then update props from new node to current node -> run update fn
-      // c._h is a tricky way to check if it's a Nho custom element
-      else if (c._h) {
-        c._ga(n?.attributes);
-        c._u(true);
-      }
-      // if they have different text contents, then replace current node by new node
-      else if (c.textContent !== n.textContent) replace();
-
-      /* update attributes of current node */
-      if (c?.attributes) {
-        if (!c.attributes.length && !n?.attributes?.length) return;
-
-        /* remove all attributes of current node */
-        while (c.attributes.length > 0) c.removeAttribute(c.attributes[0].name);
-
-        /* add new attributes from new node to current node */
-        this._nm(n?.attributes).forEach(({ name, value }) => c.setAttribute(name, value));
-      }
+      if (e[1] !== after) e[0].call(this, e[1], after);
+      e[1] = after;
     });
   }
 
-  /* hyper script, render html string */
-  _h(stringArray, ...valueArray) {
-    return stringArray
-      .map((s, index) => {
-        let currentValue = valueArray[index] ?? "";
-        let valueString = currentValue;
-
-        // if string ends with "=", then it's gonna be a value hereafter
-        if (s[s.length - 1] === "=") {
-          // if attribute is prop/event/ref, then cache value
-          if (/\s(p:\S+|on\S+|ref)=$/.test(s)) {
-            let key = ++Nho._i;
-            Nho._c.set(key, typeof currentValue === "function" ? currentValue.bind(this) : currentValue);
-            valueString = key;
-          }
-          // else, then serialize attribute
-          else valueString = `"${`${currentValue}`.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)}"`;
-        }
-        // if value is array, that should be an array of child components, then join it all
-        else if (Array.isArray(currentValue)) valueString = currentValue.join("");
-
-        return s + valueString;
-      })
-      .join("");
-  }
-
-  /* events to dom */
-  _e() {
-    this._sr.querySelectorAll("*").forEach((node) => {
-      if (!node.attributes.length) return;
-
-      this._nm(node.attributes).forEach(({ name, value }) => {
-        let index = +value;
-
-        if (name.startsWith("on")) node[name] = Nho._c.get(index) || null;
-        if (name === "ref") {
-          let ref = Nho._c.get(index);
-          if (ref) ref.current = node;
-        }
+  /* one update per frame */
+  _s() {
+    if (!this._t)
+      this._t = requestAnimationFrame(() => {
+        this._t = 0;
+        this._u();
       });
-    });
-  }
-
-  /* API */
-
-  effect(valueFn, callback) {
-    this._ef.set(valueFn, callback);
-    this._ev.set(valueFn, valueFn.call(this));
   }
 
   ref(initialValue) {
     return { current: initialValue };
   }
 
-  reactive(state) {
-    return new Proxy(state, {
-      set: (target, key, value) => {
-        if (target[key] !== value) {
-          target[key] = value;
-
-          /* batch update after each frame */
-          this._t && cancelAnimationFrame(this._t);
-          this._t = requestAnimationFrame(() => this._u());
-        }
-
-        return true;
-      },
-    });
+  setState(patch) {
+    Object.assign(this.state, patch);
+    this._s();
   }
 
-  /* HELPER FUNCTIONS */
-
-  /* turn NodeMap to array */
-  _nm(attributes) {
-    return [...(attributes || [])];
+  effect(valueFn, callback) {
+    this._e.set(valueFn, [callback, valueFn.call(this)]);
   }
 
-  /* get attributes object */
-  _ga(attributes) {
-    /* internally cache old props */
-    this._op = this.props;
-
-    let props = {};
-    this._nm(attributes).forEach(({ nodeName, nodeValue }) => {
-      props[nodeName.startsWith("p:") ? nodeName.slice(2) : nodeName] = Nho._c.get(+nodeValue);
-    });
-
-    this.props = props;
-  }
-
-  _sc(obj1, obj2) {
-    let keys1 = Object.keys(obj1);
-    let keys2 = Object.keys(obj2);
-
-    return keys1.length === keys2.length && keys1.every((key) => obj1[key] === obj2[key]);
-  }
-
-  /* STATIC */
-
-  /* style */
+  /* injected into every element */
   static style = "";
-
-  /* value cache for props/events/refs */
-  static _c = new Map();
-
-  /* cache id counter for props/events/refs */
-  static _i = 0;
-
-  /* render depth for safe cache cleanup */
-  static _d = 0;
-}
-
-if (typeof globalThis !== "undefined") {
-  globalThis.nho = globalThis.nho || {};
-  globalThis.nho.Nho = Nho;
 }
