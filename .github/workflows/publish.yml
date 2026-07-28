@@ -48,7 +48,7 @@ jobs:
 
       - name: Bump version
         if: inputs.release_type != 'none'
-        run: "npm version ${{ inputs.release_type }} -m 'chore(release): %s'"
+        run: "npm version ${{ inputs.release_type }} --tag-version-prefix='' -m 'chore(release): %s'"
 
       - name: Run tests
         run: bun test
