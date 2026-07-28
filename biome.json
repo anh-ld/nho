@@ -8,13 +8,17 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "useOptionalChain": "off"
       },
       "performance": {
         "noAccumulatingSpread": "off"
       },
       "style": {
         "useConst": "off"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "off"
       }
     }
   },
