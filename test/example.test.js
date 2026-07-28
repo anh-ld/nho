@@ -30,8 +30,19 @@ const mount = async () => {
   return app;
 };
 
+/* overlays stay mounted through their leave animation, so waiting on the timer is part of closing */
+const settle = async (ms = 300) => {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+  await tick();
+};
+
+const addFirstProduct = async (app) => {
+  $($(app, "product-card"), ".card-add").click();
+  await tick();
+};
+
 const openQuickView = async (app) => {
-  $($(app, "product-card"), ".product-card").click();
+  $($(app, "product-card"), ".card").click();
   await tick();
 
   return $(app, "quick-view");
@@ -40,14 +51,14 @@ const openQuickView = async (app) => {
 it("should load products, and not hang on Loading when the fetch fails", async () => {
   const app = await mount();
 
-  expect($(app, ".loading")).toBe(null);
-  expect(app.shadowRoot.querySelectorAll("product-card").length).toBe(9);
+  expect(app.state.isLoading).toBe(false);
+  expect(app.shadowRoot.querySelectorAll("product-card").length).toBe(8);
 
   offline = true;
   const broken = await mount();
 
   expect(broken.state.isLoading).toBe(false);
-  expect($(broken, ".loading")).toBe(null);
+  expect(broken.shadowRoot.querySelectorAll("product-card").length).toBe(0);
   offline = false;
 });
 
@@ -55,10 +66,8 @@ it("should show a line total per row, not the unit price", async () => {
   const app = await mount();
   const { price } = app.state.products[0];
 
-  $($(app, "product-card"), ".buy-button").click();
-  await tick();
-  $($(app, "product-card"), ".buy-button").click();
-  await tick();
+  await addFirstProduct(app);
+  await addFirstProduct(app);
 
   const drawer = $(app, "cart-drawer");
 
@@ -77,7 +86,8 @@ it("should lock the page scroll while an overlay is open and restore it after", 
   expect($(app, ".page").style.overflow).toBe("hidden");
 
   $($(app, "cart-drawer"), ".icon-button").click();
-  await tick();
+  await settle();
+  expect($(app, "cart-drawer")).toBe(null);
   expect($(app, ".page").style.overflow).toBe("auto");
 
   await openQuickView(app);
@@ -95,7 +105,7 @@ it("should focus the close button and reset the quantity on every quick view ope
   expect(text(quick, ".qty-control span")).toBe("2");
 
   $(quick, ".quick-close").click();
-  await tick();
+  await settle();
   quick = await openQuickView(app);
 
   expect(text(quick, ".qty-control span")).toBe("1");
@@ -108,7 +118,7 @@ it("should add the chosen quantity, then increment and remove from the drawer", 
   $(quick, ".qty-control button:last-child").click();
   await tick();
   $(quick, ".buy-button").click();
-  await tick();
+  await settle();
 
   expect(app.state.cart[0].qty).toBe(2);
   expect($(app, "quick-view")).toBe(null);
@@ -120,24 +130,34 @@ it("should add the chosen quantity, then increment and remove from the drawer", 
   expect(app.state.cart[0].qty).toBe(3);
 
   $(drawer, ".remove-button").click();
-  await tick();
+  await settle();
   expect(app.state.cart.length).toBe(0);
   expect(text($(app, "cart-drawer"), ".empty-cart")).toBe("Your cart is empty.");
+});
+
+it("should confirm the add on the card itself, then fall back to the idle label", async () => {
+  const app = await mount();
+  const card = $(app, "product-card");
+
+  expect(text(card, ".card-add")).toBe("Add to cart");
+
+  await addFirstProduct(app);
+  expect(text(card, ".card-add")).toBe("Added");
+  expect($(card, ".card-add").className).toContain("added");
 });
 
 it("should check out, then clear the message on the next open", async () => {
   const app = await mount();
 
-  $($(app, "product-card"), ".buy-button").click();
-  await tick();
+  await addFirstProduct(app);
 
   $($(app, "cart-drawer"), ".checkout-button").click();
   await tick();
-  expect(text($(app, "cart-drawer"), ".cart-message")).toContain("Checkout complete");
+  expect(text($(app, "cart-drawer"), ".cart-message")).toContain("Order placed");
   expect(app.state.cart.length).toBe(0);
 
   $($(app, "cart-drawer"), ".icon-button").click();
-  await tick();
+  await settle();
   $(app, ".cart-button").click();
   await tick();
 
