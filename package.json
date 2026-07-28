@@ -1,11 +1,14 @@
 {
   "name": "@anh-ld/nho",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
   "description": "~1.35KB Web Component abstraction",
-  "keywords": ["nho", "web component"],
+  "keywords": [
+    "nho",
+    "web component"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/anh-ld/nho.git"
@@ -24,7 +27,11 @@
     "./dist/": "./dist/"
   },
   "main": "./dist/index.umd.js",
-  "files": ["dist", "src", "*.md"],
+  "files": [
+    "dist",
+    "src",
+    "*.md"
+  ],
   "scripts": {
     "build": "bun run build:module && bun run build:umd && bun run size",
     "build:module": "esbuild src/index.js --bundle --minify --format=esm --target=es2022 --outfile=dist/index.es.js",
