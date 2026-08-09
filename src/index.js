@@ -10,12 +10,26 @@ let compile = (strings) => {
   let inTag = false;
 
   strings.forEach((s, index) => {
-    let open = s.lastIndexOf("<");
-    let close = s.lastIndexOf(">");
+    let open = -1, close = -1;
+    let inQ = false, q = null;
+    for (let i = 0; i < s.length; i++) {
+      let c = s[i];
+      if (inQ) {
+        if (c === q) inQ = false;
+      } else if (c === '"' || c === "'") {
+        inQ = true;
+        q = c;
+      } else if (c === '<') open = i;
+      else if (c === '>') close = i;
+    }
 
-    /* neither found? stay where the last chunk left us */
-    if (open !== close) inTag = open > close;
-
+    if (open !== close) {
+      inTag = open > close;
+      if (inTag && open !== -1) {
+        let next = s[open + 1];
+        if (next == null || /\s/.test(next)) inTag = false;
+      }
+    }
     markup += s + (index < strings.length - 1 ? (inTag ? MARK : `<!--${MARK}-->`) : "");
   });
 
