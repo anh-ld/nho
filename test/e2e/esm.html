@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <body>
+    <counter-app></counter-app>
+
+    <script type="module">
+      import { Nho } from "/dist/index.es.js";
+
+      Nho.style = `span { color: rgb(1, 2, 3); }`;
+
+      class CountLabel extends Nho {
+        render(h) {
+          return h`<span id="label">${this.props.count}</span>`;
+        }
+      }
+
+      class CounterApp extends Nho {
+        setup() {
+          this.state = { count: 0 };
+        }
+
+        bump() {
+          this.setState({ count: this.state.count + 1 });
+        }
+
+        render(h) {
+          return h`
+            <button id="bump" onclick=${this.bump}>bump</button>
+            <count-label count=${this.state.count}></count-label>
+          `;
+        }
+      }
+
+      customElements.define("count-label", CountLabel);
+      customElements.define("counter-app", CounterApp);
+
+      window.ready = 1;
+    </script>
+  </body>
+</html>

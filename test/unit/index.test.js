@@ -1,7 +1,7 @@
 import { beforeEach, expect, it } from "bun:test";
 import { tick } from "./env.js";
 
-const { Nho } = await import("../src/index.js");
+const { Nho } = await import("../../src/index.js");
 
 class ChildElement extends Nho {
   render(h) {
