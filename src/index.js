@@ -8,13 +8,16 @@ export let html = (s, ...v) => ({ s, v });
 let compile = (strings) => {
   let markup = "";
   let inTag = false;
+  let quote = "";
 
   strings.forEach((s, index) => {
-    let open = s.lastIndexOf("<");
-    let close = s.lastIndexOf(">");
-
-    /* neither found? stay where the last chunk left us */
-    if (open !== close) inTag = open > close;
+    /* where the last chunk left us. a "<" that opens no tag is text, a quoted ">" closes no tag */
+    for (let c of s.replace(/<(?![a-z!/?])/gi, "")) {
+      if (quote) quote = c === quote ? "" : quote;
+      else if (!inTag) inTag = c === "<";
+      else if (c === ">") inTag = false;
+      else if (c === '"' || c === "'") quote = c;
+    }
 
     markup += s + (index < strings.length - 1 ? (inTag ? MARK : `<!--${MARK}-->`) : "");
   });
