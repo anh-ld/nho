@@ -4,7 +4,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "~1.35KB Web Component abstraction",
+  "description": "~1.4KB Web Component abstraction",
   "keywords": ["nho", "web component"],
   "repository": {
     "type": "git",

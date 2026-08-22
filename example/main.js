@@ -1136,7 +1136,7 @@ class ShopApp extends Nho {
         </div>
         <footer class="footnote">
           This is a demo store for
-          <a href="https://github.com/anh-ld/nho" target="_blank" rel="noopener">Nho</a>, a 1.3KB reactive Web
+          <a href="https://github.com/anh-ld/nho" target="_blank" rel="noopener">Nho</a>, a 1.4KB reactive Web
           Component library. Products and prices are placeholder data.
           <a href="https://github.com/anh-ld/nho/tree/main/example" target="_blank" rel="noopener">Read the source</a>.
         </footer>

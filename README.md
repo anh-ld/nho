@@ -2,7 +2,7 @@
 
 > `nhỏ` — "small" in Vietnamese
 
-Reactive Web Components. **1.3KB** gzipped, zero deps.
+Reactive Web Components. **1.4KB** gzipped, zero deps.
 
 [**Live demo: Ecommerce Cart**](https://nho-example.netlify.app/) · [source](./example)
 
@@ -13,13 +13,15 @@ echo '@anh-ld:registry=https://npm.pkg.github.com' >> .npmrc
 npm install @anh-ld/nho
 ```
 
-No build step, esm.sh serves it from GitHub — drop `@0.4.0` for latest:
+No build step, esm.sh serves it from GitHub:
 
 ```html
 <script type="module">
-  import { Nho } from "https://esm.sh/gh/anh-ld/nho@0.4.0";
+  import { Nho } from "https://esm.sh/gh/anh-ld/nho";
 </script>
 ```
+
+Pin a release: `https://esm.sh/gh/anh-ld/nho@0.4.0`
 
 ## Quick start
 
