@@ -12,7 +12,7 @@ globalThis.fetch = async () => {
   };
 };
 
-await import("../example/main.js");
+await import("../../example/main.js");
 
 const $ = (element, selector) => element.shadowRoot.querySelector(selector);
 const text = (element, selector) => $(element, selector)?.textContent.trim();

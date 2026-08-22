@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <body>
+    <umd-app></umd-app>
+
+    <script src="/dist/index.umd.js"></script>
+    <script>
+      class UmdApp extends window.nho.Nho {
+        render(h) {
+          return h`<span id="label">umd ok</span>`;
+        }
+      }
+
+      customElements.define("umd-app", UmdApp);
+
+      window.ready = 1;
+    </script>
+  </body>
+</html>

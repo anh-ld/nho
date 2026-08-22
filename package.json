@@ -41,6 +41,7 @@
     "coverage": "bun test --coverage",
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "e2e": "bun run build && bun test ./test/e2e/smoke.e2e.js",
     "dev": "bun ./example/index.html",
     "check": "bunx @biomejs/biome check --write .",
     "clean": "rm -rf dist example/dist"
