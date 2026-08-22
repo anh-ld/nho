@@ -12,7 +12,8 @@ globalThis.customElements = window.customElements;
 globalThis.Node = window.Node;
 globalThis.NodeFilter = window.NodeFilter;
 globalThis.navigator = window.navigator;
-globalThis.requestAnimationFrame = window.requestAnimationFrame || ((cb) => setTimeout(() => cb(Date.now()), 16));
+/* jsdom has no rAF without pretendToBeVisual. nothing here needs frame pacing, only "later than microtasks" */
+globalThis.requestAnimationFrame = window.requestAnimationFrame || ((cb) => setTimeout(() => cb(Date.now()), 0));
 globalThis.cancelAnimationFrame = window.cancelAnimationFrame || ((id) => clearTimeout(id));
 
 /* the only two jest-dom matchers this suite used, minus its eight-package tree */
