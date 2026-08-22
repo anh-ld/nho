@@ -238,7 +238,7 @@ class FalsyPropParent extends Nho {
 
 class TrailingEqualsElement extends Nho {
   render(h) {
-    return h`<p title=${"t"}>n=${1} a=${2}</p>`;
+    return h`<p title=${"t"} lang="a > ${"en"}">n=${1} a=${2}; 1 < 2, it's ${"fine"}</p>`;
   }
 }
 
@@ -515,6 +515,13 @@ it("should treat text ending in = as text, not as an attribute", () => {
 
   expect(p.getAttribute("title")).toBe("t");
   expect(p).toHaveTextContent("n=1 a=2");
+});
+
+it("should place holes by html context, not by the nearest angle bracket", () => {
+  const p = mount("trailing-equals").shadowRoot.querySelector("p");
+
+  expect(p.getAttribute("lang")).toBe("a > en");
+  expect(p).toHaveTextContent("1 < 2, it's fine");
 });
 
 it("should render and update lists", async () => {
