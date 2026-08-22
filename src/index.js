@@ -1,5 +1,5 @@
 let cache = new WeakMap();
-let MARK = "$nho$";
+let MARK = "$n$";
 
 /* capture, parse nothing. "s" marks a template */
 export let html = (s, ...v) => ({ s, v });
@@ -74,7 +74,7 @@ let instantiate = (strings) => {
 
 /* text hole: text, a nested template, or a list of either */
 let setChild = (inst, k, anchor, value, host) => {
-  let list = Array.isArray(value) ? value : [value];
+  let list = [value].flat();
   let state = inst.c[k] || (inst.c[k] = []);
 
   /* drop what the new value dropped */
@@ -89,7 +89,7 @@ let setChild = (inst, k, anchor, value, host) => {
     if (child && child[0] === strings) {
       if (strings) return update(child[1], item.v, host);
 
-      child[2][0].data = item == null || item === true || item === false ? "" : item;
+      child[2][0].data = item == null || item === !!item ? "" : item;
 
       return;
     }
@@ -97,13 +97,15 @@ let setChild = (inst, k, anchor, value, host) => {
     if (child) child[2].forEach((node) => node.remove());
 
     let nested = strings && instantiate(strings);
-    let node = nested ? nested.r : document.createTextNode(item == null || item === true || item === false ? "" : item);
-
-    /* fragment empties on insert, remember its children first */
-    let nodes = nested ? [...nested.r.childNodes] : [node];
+    let node = nested ? nested.r : document.createTextNode(item == null || item === !!item ? "" : item);
 
     if (nested) update(nested, item.v, host);
-    anchor.before(node);
+
+    /* fragment empties on insert, remember its children first. holes are filled by now, so they count */
+    let nodes = nested ? [...nested.r.childNodes] : [node];
+
+    /* the next item is still where it was, put the new node in front of it */
+    (state[index + 1]?.[2][0] ?? anchor).before(node);
     state[index] = [strings, nested, nodes];
   });
 };
@@ -126,6 +128,7 @@ let update = (inst, values, host) => {
       return;
     }
 
+    let before = inst.l[part.h];
     let changed = false;
     for (let i = 0; i < part.c; i++) {
       if (values[part.h + i] !== inst.l[part.h + i]) changed = true;
@@ -141,17 +144,19 @@ let update = (inst, values, host) => {
     let value =
       part.c === 1 && !part.s[0] && !part.s[1]
         ? values[part.h]
-        : part.s.reduce((acc, s, i) => acc + values[part.h + i - 1] + s);
+        : part.s.reduce((acc, s, i) => acc + (values[part.h + i - 1] ?? "") + s);
 
     /* on a custom element every "on*" is a prop, so onClose reaches the child, not HTMLElement's onclose */
-    if (name === "ref") value.current = node;
-    else if (part.o) {
+    if (name === "ref") {
+      if (before && before !== value) before.current = null;
+      if (value) value.current = node;
+    } else if (part.o) {
       /* bound to the owner, like an inline handler */
-      (node.props ??= {})[name] = value instanceof Function ? value.bind(host) : value;
+      (node.props ??= {})[name] = typeof value === "function" ? value.bind(host) : value;
 
       /* an object can hold new contents under the same identity, a function cannot */
       if (changed || (value && typeof value === "object")) node._s?.();
-    } else if (name.startsWith("on") && name in node) node[name] = value ? value.bind(host) : null;
+    } else if (/^on/.test(name) && name in node) node[name] = value ? value.bind(host) : null;
     else if (value == null || value === false) node.removeAttribute(name);
     else node.setAttribute(name, value);
   });
@@ -187,7 +192,7 @@ export class Nho extends HTMLElement {
 
   disconnectedCallback() {
     /* drop the pending update, must not run after unmount */
-    cancelAnimationFrame(this._t);
+    this._t = cancelAnimationFrame(this._t);
 
     this.onUnmounted?.();
   }
@@ -195,17 +200,21 @@ export class Nho extends HTMLElement {
   /* update */
   _u() {
     let result = this.render(html);
-    let first = !this._i;
 
-    if (first) this._i = instantiate(result.s);
+    /* a different template means a different skeleton, holes do not line up */
+    let first = this._k !== result.s;
+
+    /* the old skeleton is about to go, its refs point at nothing */
+    if (first && this._i) this._i.p.forEach((p) => p.n === "ref" && this._i.l[p.h] && (this._i.l[p.h].current = null));
+
+    if (first) {
+      this._sr.innerHTML = Nho.style ? `<style>${Nho.style}</style>` : "";
+      this._i = instantiate((this._k = result.s));
+    }
 
     update(this._i, result.v, this);
 
-    if (first) {
-      if (Nho.style) this._sr.innerHTML = `<style>${Nho.style}</style>`;
-
-      this._sr.append(this._i.r);
-    }
+    if (first) this._sr.append(this._i.r);
 
     this.onUpdated?.();
 
@@ -223,7 +232,9 @@ export class Nho extends HTMLElement {
     if (!this._t)
       this._t = requestAnimationFrame(() => {
         this._t = 0;
-        this._u();
+
+        /* removed while the frame was pending, or asked by a parent after removal */
+        if (this.isConnected) this._u();
       });
   }
 
