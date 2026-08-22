@@ -1,6 +1,6 @@
 {
   "name": "@anh-ld/nho",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
