@@ -34,8 +34,8 @@
   ],
   "scripts": {
     "build": "bun run build:module && bun run build:umd && bun run size",
-    "build:module": "esbuild src/index.js --bundle --minify --format=esm --target=es2022 --outfile=dist/index.es.js",
-    "build:umd": "esbuild src/umd.js --bundle --minify --format=iife --target=es2022 --outfile=dist/index.umd.js",
+    "build:module": "esbuild src/index.js --bundle --minify --mangle-props=^_ --format=esm --target=es2022 --outfile=dist/index.es.js",
+    "build:umd": "esbuild src/umd.js --bundle --minify --mangle-props=^_ --format=iife --target=es2022 --outfile=dist/index.umd.js",
     "size": "for f in dist/*.js; do echo \"$f: $(wc -c <\"$f\") raw, $(gzip -c \"$f\" | wc -c) gzip\"; done",
     "build:example": "bun build ./example/index.html --outdir=example/dist --minify",
     "coverage": "bun test --coverage",

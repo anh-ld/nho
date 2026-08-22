@@ -297,6 +297,96 @@ class SetupCountElement extends Nho {
   }
 }
 
+class SwapRootElement extends Nho {
+  setup() {
+    this.state = { loading: true };
+  }
+
+  render(h) {
+    return this.state.loading ? h`<p>loading</p>` : h`<div class=${"done"}>${"ready"}</div>`;
+  }
+}
+
+class SwapItemElement extends Nho {
+  setup() {
+    this.state = { rich: false };
+  }
+
+  render(h) {
+    return h`<div>${["a", this.state.rich ? h`<i>b</i>` : "b", "c"]}</div>`;
+  }
+}
+
+class NullishPartElement extends Nho {
+  setup() {
+    this.state = { note: null, target: null };
+  }
+
+  render(h) {
+    return h`<p ref=${this.state.target} class="box ${this.state.note}"></p>`;
+  }
+}
+
+class HoleFirstListElement extends Nho {
+  setup() {
+    this.state = { swap: false, items: ["x", "y"] };
+  }
+
+  render(h) {
+    return h`<div>${[this.state.swap ? h`<b>A</b>` : "A", ...this.state.items.map((i) => h`${i}<i>-</i>`)]}</div>`;
+  }
+}
+
+class ZombieElement extends Nho {
+  setup() {
+    this.state = { count: 0 };
+    this.updates = 0;
+    this.effects = 0;
+
+    this.effect(
+      () => this.state.count,
+      () => this.effects++,
+    );
+  }
+
+  onUpdated() {
+    this.updates++;
+  }
+
+  render(h) {
+    return h`<p>${this.state.count}</p>`;
+  }
+}
+
+class RefSwapElement extends Nho {
+  setup() {
+    this.state = { on: true };
+    this.target = this.ref();
+  }
+
+  render(h) {
+    return this.state.on ? h`<p ref=${this.target}>on</p>` : h`<div>off</div>`;
+  }
+}
+
+class RefDropElement extends Nho {
+  setup() {
+    this.state = { keep: true };
+    this.target = this.ref();
+  }
+
+  render(h) {
+    return h`<p ref=${this.state.keep ? this.target : null}>x</p>`;
+  }
+}
+
+customElements.define("hole-first-list", HoleFirstListElement);
+customElements.define("zombie-element", ZombieElement);
+customElements.define("ref-swap", RefSwapElement);
+customElements.define("ref-drop", RefDropElement);
+customElements.define("swap-root", SwapRootElement);
+customElements.define("swap-item", SwapItemElement);
+customElements.define("nullish-part", NullishPartElement);
 customElements.define("parent-element", ParentElement);
 customElements.define("child-element", ChildElement);
 customElements.define("ref-element", RefElement);
@@ -700,4 +790,110 @@ it("should run setup only once when the element is moved", async () => {
   expect(element.setupCount).toBe(1);
   expect(element.state.count).toBe(5);
   expect(element.props).toBe(props);
+});
+
+it("should re-instantiate when render returns a different template", async () => {
+  const element = mount("swap-root");
+
+  expect(element.shadowRoot.querySelector("p")).toHaveTextContent("loading");
+
+  element.setState({ loading: false });
+  await tick();
+
+  const node = element.shadowRoot.querySelector("div");
+
+  expect(node).toHaveTextContent("ready");
+  expect(node.getAttribute("class")).toBe("done");
+  expect(element.shadowRoot.querySelector("style")).toBeInTheDocument();
+});
+
+it("should keep list order when an item changes shape", async () => {
+  const element = mount("swap-item");
+
+  element.setState({ rich: true });
+  await tick();
+
+  expect(element.shadowRoot.querySelector("div")).toHaveTextContent("abc");
+  expect(element.shadowRoot.querySelector("i")).toHaveTextContent("b");
+});
+
+it("should keep updating after the element is moved in the dom", async () => {
+  const element = mount("setup-count");
+  const box = document.createElement("div");
+
+  document.body.appendChild(box);
+
+  /* move while a frame is pending: the move must not leave the scheduler stuck */
+  element.setState({ count: 7 });
+  box.appendChild(element);
+  await tick();
+
+  expect(element.shadowRoot.querySelector("p")).toHaveTextContent("7");
+
+  element.setState({ count: 3 });
+  await tick();
+
+  expect(element.shadowRoot.querySelector("p")).toHaveTextContent("3");
+});
+
+it("should ignore a nullish ref and skip nullish attribute parts", () => {
+  const element = mount("nullish-part");
+  const p = element.shadowRoot.querySelector("p");
+
+  /* jsdom reports a throw inside the reaction instead of propagating it, so the render itself is the assertion */
+  expect(p).toBeInTheDocument();
+  expect(p.getAttribute("class")).toBe("box ");
+});
+
+it("should keep list order when the next item starts with a hole", async () => {
+  const element = mount("hole-first-list");
+
+  expect(element.shadowRoot.querySelector("div").textContent).toBe("Ax-y-");
+
+  element.setState({ swap: true });
+  await tick();
+
+  expect(element.shadowRoot.querySelector("div").textContent).toBe("Ax-y-");
+  expect(element.shadowRoot.querySelector("b")).toHaveTextContent("A");
+});
+
+it("should remove every node of a dropped list item", async () => {
+  const element = mount("hole-first-list");
+
+  element.setState({ items: ["x"] });
+  await tick();
+
+  expect(element.shadowRoot.querySelector("div").textContent).toBe("Ax-");
+});
+
+it("should not render after the element is removed", async () => {
+  const element = mount("zombie-element");
+
+  element.remove();
+  element.setState({ count: 1 });
+  await tick();
+
+  expect(element.updates).toBe(1);
+  expect(element.effects).toBe(0);
+  expect(element.shadowRoot.querySelector("p")).toHaveTextContent("0");
+});
+
+it("should release a ref when its node goes away", async () => {
+  const swap = mount("ref-swap");
+
+  expect(swap.target.current).toBe(swap.shadowRoot.querySelector("p"));
+
+  swap.setState({ on: false });
+  await tick();
+
+  expect(swap.target.current).toBe(null);
+
+  const drop = mount("ref-drop");
+
+  expect(drop.target.current).toBe(drop.shadowRoot.querySelector("p"));
+
+  drop.setState({ keep: false });
+  await tick();
+
+  expect(drop.target.current).toBe(null);
 });

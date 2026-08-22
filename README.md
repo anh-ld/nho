@@ -147,6 +147,8 @@ flowchart LR
 - HTML lowercases names — `onBuy=${fn}` arrives as `props.onbuy`.
 - Bare host attributes are `""` — `<my-el done>` is falsy, use `done="yes"`.
 - No holes in `<style>` or `<textarea>` — use `Nho.style`.
+- Holes go in text or in an attribute value — not in a tag name (`<${tag}>`), an attribute name (`<p ${attr}>`), or an HTML comment.
+- Host attributes are read once at mount — change props from the parent, not with `setAttribute`.
 - Only `setState` re-renders, and it merges shallowly — replace nested objects and arrays, never mutate.
 - Falsy follows React — `null` `undefined` `true` `false` render nothing, `0` renders.
 - Text holes take primitives — a plain object with an `s` key reads as a template.
