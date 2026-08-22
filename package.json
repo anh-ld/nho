@@ -5,10 +5,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "description": "~1.4KB Web Component abstraction",
-  "keywords": [
-    "nho",
-    "web component"
-  ],
+  "keywords": ["nho", "web component"],
   "repository": {
     "type": "git",
     "url": "https://github.com/anh-ld/nho.git"
@@ -27,11 +24,7 @@
     "./dist/": "./dist/"
   },
   "main": "./dist/index.umd.js",
-  "files": [
-    "dist",
-    "src",
-    "*.md"
-  ],
+  "files": ["dist", "src", "*.md"],
   "scripts": {
     "build": "bun run build:module && bun run build:umd && bun run size",
     "build:module": "esbuild src/index.js --bundle --minify --mangle-props=^_ --format=esm --target=es2022 --outfile=dist/index.es.js",
@@ -46,13 +39,8 @@
     "check": "bunx @biomejs/biome check --write .",
     "clean": "rm -rf dist example/dist"
   },
-  "npmConfig": {
-    "save-exact": true
-  },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
-    "@testing-library/jest-dom": "6.4.6",
-    "@testing-library/user-event": "14.5.2",
     "esbuild": "0.28.1",
     "jsdom": "22.1.0"
   }

@@ -30,8 +30,8 @@ const mount = async () => {
   return app;
 };
 
-/* overlays stay mounted through their leave animation, so waiting on the timer is part of closing */
-const settle = async (ms = 300) => {
+/* overlays stay mounted through their leave animation, so waiting on the timer is part of closing. the longest is CART_EXIT, 240ms */
+const settle = async (ms = 260) => {
   await new Promise((resolve) => setTimeout(resolve, ms));
   await tick();
 };

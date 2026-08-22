@@ -197,7 +197,6 @@ export class Nho extends HTMLElement {
     this.onUnmounted?.();
   }
 
-  /* update */
   _u() {
     let result = this.render(html);
 
