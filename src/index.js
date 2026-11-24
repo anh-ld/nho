@@ -1,11 +1,21 @@
-let cache = new WeakMap();
 let MARK = "$n$";
 
 /* capture, parse nothing. "s" marks a template */
 export let html = (s, ...v) => ({ s, v });
 
-/* skeleton, once per template. hole in text -> comment anchor, hole in a tag -> attribute sentinel */
-let compile = (strings) => {
+/* every element and comment, in document order */
+let walk = (root) => {
+  let walker = document.createTreeWalker(root, 129);
+  let nodes = [];
+  let node;
+
+  while ((node = walker.nextNode())) nodes.push(node);
+
+  return nodes;
+};
+
+/* parse per instance: no cache or clone keeps the bundle at 1.4 KiB, at ~1.8x mount cost. hole in text -> comment anchor, hole in a tag -> attribute sentinel */
+let instantiate = (strings) => {
   let markup = "";
   let inTag = false;
   let quote = "";
@@ -27,18 +37,13 @@ let compile = (strings) => {
 
   /* one walk, every hole, in hole order */
   let parts = [];
-  let walker = document.createTreeWalker(t.content, 129);
-  let index = -1;
   let hole = 0;
-  let node;
 
-  while ((node = walker.nextNode())) {
-    index++;
-
+  walk(t.content).forEach((node) => {
     /* only comments carry data */
     if (node.data != null) {
-      if (node.data === MARK) parts.push({ i: index, h: hole++ });
-      continue;
+      if (node.data === MARK) parts.push({ i: node, h: hole++ });
+      return;
     }
 
     [...node.attributes].forEach(({ name, value }) => {
@@ -48,28 +53,13 @@ let compile = (strings) => {
       let statics = value.split(MARK);
 
       /* dash in tag = custom element = props, not attributes */
-      parts.push({ i: index, n: name, s: statics, h: hole, c: statics.length - 1, o: node.localName.includes("-") });
+      parts.push({ i: node, n: name, s: statics, h: hole, c: statics.length - 1, o: node.localName.includes("-") });
       hole += statics.length - 1;
       node.removeAttribute(name);
     });
-  }
+  });
 
-  return { t: t.content, p: parts };
-};
-
-/* clone the skeleton, index its nodes in walk order */
-let instantiate = (strings) => {
-  let compiled = cache.get(strings);
-  if (!compiled) cache.set(strings, (compiled = compile(strings)));
-
-  let root = compiled.t.cloneNode(true);
-  let walker = document.createTreeWalker(root, 129);
-  let nodes = [];
-  let node;
-
-  while ((node = walker.nextNode())) nodes.push(node);
-
-  return { r: root, p: compiled.p, d: nodes, l: [], c: [] };
+  return { r: t.content, p: parts, l: [], c: [] };
 };
 
 /* text hole: text, a nested template, or a list of either */
@@ -84,12 +74,14 @@ let setChild = (inst, k, anchor, value, host) => {
   list.forEach((item, index) => {
     let child = state[index];
     let strings = item && item.s;
+    /* nothing, true and false render as no text */
+    let text = item == null || item === !!item ? "" : item;
 
     /* same identity: patch in place */
     if (child && child[0] === strings) {
       if (strings) return update(child[1], item.v, host);
 
-      child[2][0].data = item == null || item === !!item ? "" : item;
+      child[2][0].data = text;
 
       return;
     }
@@ -97,7 +89,7 @@ let setChild = (inst, k, anchor, value, host) => {
     if (child) child[2].forEach((node) => node.remove());
 
     let nested = strings && instantiate(strings);
-    let node = nested ? nested.r : document.createTextNode(item == null || item === !!item ? "" : item);
+    let node = nested ? nested.r : document.createTextNode(text);
 
     if (nested) update(nested, item.v, host);
 
@@ -113,7 +105,7 @@ let setChild = (inst, k, anchor, value, host) => {
 /* write changed values into the nodes already found */
 let update = (inst, values, host) => {
   inst.p.forEach((part, k) => {
-    let node = inst.d[part.i];
+    let node = part.i;
 
     /* text hole */
     if (!part.n) {

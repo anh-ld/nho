@@ -134,9 +134,9 @@ flowchart LR
   A[State change] --> B[Batched re-render] --> C[Write changed values] --> D[Done]
 ```
 
-- Compile once — browser parses the static HTML, Nho records where each `${}` sits.
-- Render — clone the skeleton, write the changed values.
-- Static DOM is never re-created, re-parsed, or diffed.
+- Mount — browser parses the HTML, Nho records where each `${}` sits.
+- Update — write only the changed values.
+- Static DOM is never re-created, re-parsed, or diffed on update.
 
 ## Limitations
 
