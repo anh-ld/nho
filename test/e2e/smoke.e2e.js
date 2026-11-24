@@ -59,7 +59,9 @@ beforeEach(() => {
 afterEach(() => {
   try {
     wv?.close();
-  } catch {}
+  } catch {
+    // already closed
+  }
 });
 
 it("esm bundle renders", async () => {

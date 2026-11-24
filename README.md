@@ -84,6 +84,7 @@ customElements.define("todo-item", TodoItem);
 customElements.define("todo-list", TodoList);
 ```
 
+<!-- prettier-ignore -->
 ```html
 <todo-list></todo-list>
 <todo-item label="milk" done="yes"></todo-item>
@@ -155,14 +156,14 @@ flowchart LR
 
 ## Development
 
-`Bun 1.4+`
+`Bun 1.4.6+`
 
 ```sh
 bun install
 bun run dev     # example at ./example
 bun test        # ./test/unit, jsdom via test/unit/env.js
 bun run e2e     # ./test/e2e, real WebKit via Bun.WebView, against dist/
-bun run check   # biome format + lint
+bun run check   # bun fmt + bun lint
 bun run build   # dist/index.es.js + dist/index.umd.js
 ```
 
