@@ -13,7 +13,7 @@ echo '@anh-ld:registry=https://npm.pkg.github.com' >> .npmrc
 npm install @anh-ld/nho
 ```
 
-No build step, esm.sh serves it from GitHub:
+No build step: esm.sh serves it from GitHub.
 
 ```html
 <script type="module">
@@ -97,7 +97,7 @@ Component:
 - `setup()` — once, before mount.
 - `render(h)` — returns the template.
 - `state` — plain object, set in `setup()`.
-- `setState(patch)` — merges, one re-render per frame.
+- `setState(patch)` — merges; re-renders at most once per frame.
 - `effect(valueFn, cb)` — `cb(before, after)` when `valueFn()` changes.
 - `ref(initial?)` — returns `{ current }`.
 - `props` — host attributes and parent values.
@@ -119,7 +119,7 @@ Template:
 ## Editor
 
 - VS Code: install [lit-html](https://marketplace.visualstudio.com/items?itemName=bierner.lit-html) for HTML highlighting in templates.
-- It keys off the tag name — name the `render` param `html`.
+- It detects templates by tag name, so name the `render` param `html`.
 
 ```js
 render(html) {
@@ -129,10 +129,7 @@ render(html) {
 
 ## How it works
 
-```mermaid
-flowchart LR
-  A[State change] --> B[Batched re-render] --> C[Write changed values] --> D[Done]
-```
+![A template is tagged, its holes are marked by context and parsed once, one tree walk records each hole as an attribute, text anchor or prop, and each update writes only the holes whose value changed.](./how-it-works.webp)
 
 - Mount — browser parses the HTML, Nho records where each `${}` sits.
 - Update — write only the changed values.
@@ -143,7 +140,7 @@ flowchart LR
 > [!IMPORTANT]
 > Deliberately small. Complex UI? Use a full framework.
 
-- No `key` — lists diff by index, reordered items drift.
+- No `key` — lists diff by index, so reordered items drift.
 - Custom-element attributes are props — `class=${x}` won't style, use a static `class`.
 - HTML lowercases names — `onBuy=${fn}` arrives as `props.onbuy`.
 - Bare host attributes are `""` — `<my-el done>` is falsy, use `done="yes"`.
@@ -151,7 +148,7 @@ flowchart LR
 - Holes go in text or in an attribute value — not in a tag name (`<${tag}>`), an attribute name (`<p ${attr}>`), or an HTML comment.
 - Host attributes are read once at mount — change props from the parent, not with `setAttribute`.
 - Only `setState` re-renders, and it merges shallowly — replace nested objects and arrays, never mutate.
-- Falsy follows React — `null` `undefined` `true` `false` render nothing, `0` renders.
+- Empty values follow React — `null` `undefined` `true` `false` render nothing; `0` renders.
 - Text holes take primitives — a plain object with an `s` key reads as a template.
 
 ## Development
