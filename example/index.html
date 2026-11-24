@@ -3,34 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nho Store</title>
+    <title>Nho shop</title>
     <style>
-      * {
-        box-sizing: border-box;
+      body {
         margin: 0;
-        padding: 0;
-        scrollbar-width: none;
-      }
-
-      *::-webkit-scrollbar {
-        width: 0;
-        height: 0;
-      }
-
-      html {
+        background: #fafaf9;
+        -webkit-font-smoothing: antialiased;
         font-family:
           ui-sans-serif,
           -apple-system,
           "Segoe UI",
           Roboto,
           sans-serif;
-        background: #ffffff;
-        color-scheme: light;
       }
     </style>
   </head>
   <body>
-    <shop-app></shop-app>
+    <!-- host attributes become props: this.props.currency -->
+    <shop-app currency="€"></shop-app>
     <script type="module" src="./main.js"></script>
   </body>
 </html>

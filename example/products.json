@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "name": "Ember Mug",
+    "price": 18,
+    "color": "#d9643a"
+  },
+  {
+    "id": 2,
+    "name": "Moss Notebook",
+    "price": 12,
+    "color": "#5b7f6e"
+  },
+  {
+    "id": 3,
+    "name": "Sun Tote",
+    "price": 24,
+    "color": "#e0b354"
+  },
+  {
+    "id": 4,
+    "name": "Harbor Bottle",
+    "price": 30,
+    "color": "#4f6aa8"
+  },
+  {
+    "id": 5,
+    "name": "Stone Coasters",
+    "price": 15,
+    "color": "#c4c1b4"
+  },
+  {
+    "id": 6,
+    "name": "Blush Candle",
+    "price": 22,
+    "color": "#d99aa5"
+  },
+  {
+    "id": 7,
+    "name": "Iris Socks",
+    "price": 9,
+    "color": "#8f78b8"
+  },
+  {
+    "id": 8,
+    "name": "Sky Lamp",
+    "price": 48,
+    "color": "#6f9fd6"
+  }
+]

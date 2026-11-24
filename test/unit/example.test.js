@@ -1,165 +1,131 @@
 import { expect, it } from "bun:test";
 import { tick } from "./env.js";
 
-let offline = false;
-
-/* the demo fetches its catalogue on mount, so stub the network before it loads */
-globalThis.fetch = async () => {
-  if (offline) throw new Error("offline");
-
-  return {
-    json: async () => Array.from({ length: 20 }, (_, i) => ({ id: i + 1, title: `T${i + 1}`, body: `B${i + 1}` })),
-  };
-};
-
 await import("../../example/main.js");
 
 const $ = (element, selector) => element.shadowRoot.querySelector(selector);
+const $$ = (element, selector) => [...element.shadowRoot.querySelectorAll(selector)];
 const text = (element, selector) => $(element, selector)?.textContent.trim();
 
 const mount = async () => {
   document.body.innerHTML = "";
+  document.body.style.overflow = "";
 
   const app = document.createElement("shop-app");
+  app.setAttribute("currency", "€");
   document.body.append(app);
-
-  /* one tick for the mount, one for the fetch that resolves during it */
-  await tick();
   await tick();
 
   return app;
 };
 
-/* overlays stay mounted through their leave animation, so waiting on the timer is part of closing. the longest is CART_EXIT, 240ms */
-const settle = async (ms = 260) => {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+const click = async (element, selector) => {
+  $(element, selector).click();
   await tick();
 };
 
-const addFirstProduct = async (app) => {
-  $($(app, "product-card"), ".card-add").click();
-  await tick();
+const row = (app, index = 0) => $$(app, "product-row")[index];
+const drawer = (app) => $(app, "cart-drawer");
+
+const openCart = async (app) => {
+  await click(app, ".cart-button");
+  return drawer(app);
 };
 
-const openQuickView = async (app) => {
-  $($(app, "product-card"), ".card").click();
-  await tick();
-
-  return $(app, "quick-view");
-};
-
-it("should load products, and not hang on Loading when the fetch fails", async () => {
+it("should list every product, priced in the host's currency attribute", async () => {
   const app = await mount();
 
-  expect(app.state.isLoading).toBe(false);
-  expect(app.shadowRoot.querySelectorAll("product-card").length).toBe(8);
-
-  offline = true;
-  const broken = await mount();
-
-  expect(broken.state.isLoading).toBe(false);
-  expect(broken.shadowRoot.querySelectorAll("product-card").length).toBe(0);
-  offline = false;
+  expect($$(app, "product-row").length).toBe(8);
+  expect(text(row(app), ".price")).toBe("€18.00");
 });
 
-it("should show a line total per row, not the unit price", async () => {
+it("should filter while typing, and say so when nothing matches", async () => {
   const app = await mount();
-  const { price } = app.state.products[0];
+  const search = $(app, ".search");
 
-  await addFirstProduct(app);
-  await addFirstProduct(app);
+  search.value = "lamp";
+  search.dispatchEvent(new window.Event("input"));
+  await tick();
+  expect($$(app, "product-row").length).toBe(1);
+  expect(text(row(app), ".name")).toBe("Sky Lamp");
 
-  const drawer = $(app, "cart-drawer");
-
-  expect(text(drawer, ".cart-item-price")).toBe(`$${(price * 2).toFixed(2)}`);
-  expect(text(drawer, ".cart-total span:last-child")).toBe(`$${(price * 2).toFixed(2)}`);
-  expect(text(app, ".cart-count")).toBe("2");
+  search.value = "zzz";
+  search.dispatchEvent(new window.Event("input"));
+  await tick();
+  expect($$(app, "product-row").length).toBe(0);
+  expect(text(app, ".empty")).toBe('No products match "zzz".');
 });
 
-it("should lock the page scroll while an overlay is open and restore it after", async () => {
+it("should add from a row and count it in the row, the header and the title", async () => {
   const app = await mount();
 
-  expect($(app, ".page").style.overflow).toBe("");
+  await click(row(app), ".add");
+  await click(row(app), ".add");
 
-  $(app, ".cart-button").click();
-  await tick();
-  expect($(app, ".page").style.overflow).toBe("hidden");
-
-  $($(app, "cart-drawer"), ".icon-button").click();
-  await settle();
-  expect($(app, "cart-drawer")).toBe(null);
-  expect($(app, ".page").style.overflow).toBe("auto");
-
-  await openQuickView(app);
-  expect($(app, ".page").style.overflow).toBe("hidden");
+  expect(text(row(app), ".add")).toBe("In cart · 2");
+  expect(text(app, ".badge")).toBe("2");
+  expect(document.title).toBe("(2) Nho shop");
 });
 
-it("should focus the close button and reset the quantity on every quick view open", async () => {
+it("should open the cart focused and lock the page, then undo both on close", async () => {
   const app = await mount();
-  let quick = await openQuickView(app);
+  const cart = await openCart(app);
 
-  expect(quick.shadowRoot.activeElement).toBe($(quick, ".quick-close"));
+  expect(cart.shadowRoot.activeElement).toBe($(cart, ".close"));
+  expect(document.body.style.overflow).toBe("hidden");
 
-  $(quick, ".qty-control button:last-child").click();
-  await tick();
-  expect(text(quick, ".qty-control span")).toBe("2");
-
-  $(quick, ".quick-close").click();
-  await settle();
-  quick = await openQuickView(app);
-
-  expect(text(quick, ".qty-control span")).toBe("1");
+  await click(cart, ".close");
+  expect(drawer(app)).toBe(null);
+  expect(document.body.style.overflow).toBe("");
 });
 
-it("should add the chosen quantity, then increment and remove from the drawer", async () => {
+it("should close the cart on Escape, and stop listening once closed", async () => {
   const app = await mount();
-  const quick = await openQuickView(app);
+  const escape = () => document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape" }));
 
-  $(quick, ".qty-control button:last-child").click();
+  await openCart(app);
+  escape();
   await tick();
-  $(quick, ".buy-button").click();
-  await settle();
+  expect(drawer(app)).toBe(null);
 
-  expect(app.state.cart[0].qty).toBe(2);
-  expect($(app, "quick-view")).toBe(null);
-
-  const drawer = $(app, "cart-drawer");
-
-  $(drawer, ".qty-control button:last-child").click();
+  /* a leaked listener would call onclose on a removed element and throw here */
+  escape();
   await tick();
-  expect(app.state.cart[0].qty).toBe(3);
-
-  $(drawer, ".remove-button").click();
-  await settle();
-  expect(app.state.cart.length).toBe(0);
-  expect(text($(app, "cart-drawer"), ".empty-cart")).toBe("Your cart is empty.");
+  expect(drawer(app)).toBe(null);
 });
 
-it("should confirm the add on the card itself, then fall back to the idle label", async () => {
+it("should total the cart, step quantities, and drop a line at zero", async () => {
   const app = await mount();
-  const card = $(app, "product-card");
 
-  expect(text(card, ".card-add")).toBe("Add to cart");
+  await click(row(app), ".add");
+  await click(row(app, 1), ".add");
+  const cart = await openCart(app);
 
-  await addFirstProduct(app);
-  expect(text(card, ".card-add")).toBe("Added");
-  expect($(card, ".card-add").className).toContain("added");
+  expect(text(cart, ".cart-total")).toBe("€30.00");
+
+  await click(cart, ".line .stepper button:last-child");
+  expect(text(cart, ".line-total")).toBe("€36.00");
+  expect(text(cart, ".cart-total")).toBe("€48.00");
+
+  await click(cart, ".line:last-child .stepper button");
+  expect($$(cart, ".line").length).toBe(1);
 });
 
-it("should check out, then clear the message on the next open", async () => {
+it("should check out, show the message, and clear it on the next open", async () => {
   const app = await mount();
+  let cart = await openCart(app);
 
-  await addFirstProduct(app);
+  expect($(cart, ".checkout").disabled).toBe(true);
+  expect(text(cart, ".empty-cart")).toBe("Your cart is empty.");
 
-  $($(app, "cart-drawer"), ".checkout-button").click();
-  await tick();
-  expect(text($(app, "cart-drawer"), ".cart-message")).toContain("Order placed");
-  expect(app.state.cart.length).toBe(0);
+  await click(cart, ".close");
+  await click(row(app), ".add");
+  cart = await openCart(app);
+  await click(cart, ".checkout");
+  expect(text(cart, ".message")).toBe("Order placed. Thanks!");
+  expect(text(app, ".badge")).toBe("0");
 
-  $($(app, "cart-drawer"), ".icon-button").click();
-  await settle();
-  $(app, ".cart-button").click();
-  await tick();
-
-  expect($($(app, "cart-drawer"), ".cart-message")).toBe(null);
+  await click(cart, ".close");
+  cart = await openCart(app);
+  expect($(cart, ".message")).toBe(null);
 });
